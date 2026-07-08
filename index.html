@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nowcasting CV Belardo_v9.9beta1 — Castel Volturno</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
+.wrap{max-width:740px;margin:0 auto;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.hdr h1{font-size:19px;font-weight:700;color:#d8eaf8;margin:3px 0 2px;}
+.hdr .sub{font-size:10px;letter-spacing:4px;color:#1e4060;text-transform:uppercase;}
+.hdr .ts{font-size:10px;color:#1e4060;}
+.btn-refresh{background:rgba(74,127,160,.15);border:1px solid #1e5a80;color:#60c0f0;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700;white-space:nowrap;}
+.btn-refresh:disabled{opacity:.5;cursor:default;}
+.src-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.src-badge{font-size:9px;padding:3px 7px;border-radius:4px;border:1px solid #0e1c2c;color:#2a5068;letter-spacing:1px;text-transform:uppercase;}
+.src-badge.ok{border-color:#22c55e44;color:#22c55e;background:rgba(34,197,94,.06);}
+.src-badge.err{border-color:#ef444444;color:#ef4444;background:rgba(239,68,68,.06);}
+.src-badge.load{animation:blink .8s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ext-banner{border-radius:10px;padding:14px 18px;margin-bottom:12px;display:none;align-items:center;gap:12px;}
+.ext-banner.on{display:flex;}
+.card{background:rgba(255,255,255,.022);border:1px solid #0e1c2c;border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+.card-label{font-size:10px;letter-spacing:3px;color:#2a5068;text-transform:uppercase;margin-bottom:10px;}
+.ph{text-align:center;padding:26px 0;color:#2a5068;}
+.ph .ico{font-size:30px;margin-bottom:10px;}.ph .msg{font-size:13px;color:#4a8090;margin-bottom:6px;}.ph .det{font-size:10px;color:#1e4060;line-height:1.7;}
+.ldg{text-align:center;padding:22px 0;}
+.ldg .step{font-size:11px;color:#4a8090;letter-spacing:2px;margin-bottom:6px;}.ldg .hint{font-size:10px;color:#1e4060;}
+.tabs{display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;}
+.tab-btn{background:transparent;border:1px solid #0e1c2c;color:#2a5068;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;font-family:inherit;}
+.tab-btn.active{background:rgba(60,140,200,.18);border-color:#1e5a80;color:#60c0f0;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+/* PREVISIONE */
+.wx-card{border-radius:12px;padding:18px 20px;margin-bottom:12px;text-align:center;}
+.wx-icon{font-size:46px;margin-bottom:8px;}.wx-label{font-size:20px;font-weight:700;letter-spacing:2px;margin-bottom:4px;}.wx-sub{font-size:11px;margin-top:4px;line-height:1.6;}
+.prec-dual{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.prec-card{border-radius:8px;padding:12px 14px;border:1px solid #0e1c2c;background:rgba(255,255,255,.02);}
+.pc-label{font-size:9px;letter-spacing:2px;color:#2a5068;text-transform:uppercase;margin-bottom:4px;line-height:1.5;}
+.pc-drops{font-size:20px;margin:3px 0;}.pc-pct{font-size:26px;font-weight:700;}.pc-desc{font-size:9px;color:#2a5068;margin-top:3px;line-height:1.5;}
+.river-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;margin-bottom:12px;}
+.rc-label{font-size:9px;letter-spacing:2px;color:#2a5068;text-transform:uppercase;}
+.rc-val{font-size:22px;font-weight:700;}.rc-sub{font-size:10px;margin-top:2px;}
+.pre-bf{background:#030810;border:1px solid #0e1c2c;border-radius:8px;padding:14px;font-size:10px;color:#7ab3d4;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow-y:auto;margin:0 0 10px 0;font-family:'IBM Plex Mono','Courier New',monospace;}
+.btn-copy{width:100%;padding:11px 0;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;letter-spacing:1px;font-weight:700;border:1px solid #1e5a80;background:rgba(74,127,160,.2);color:#60c0f0;transition:all .3s;}
+.btn-copy.copied{border-color:#22c55e;background:rgba(34,197,94,.2);color:#86efac;}
+/* ARIA & SOLE */
+.aqi-big{text-align:center;padding:10px 0 8px;}
+.aqi-num{font-size:50px;font-weight:700;line-height:1;}.aqi-sub{font-size:13px;margin-top:5px;letter-spacing:1px;}.aqi-desc{font-size:10px;color:#2a5068;margin-top:5px;line-height:1.7;}
+.poll-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.poll-cell{background:rgba(255,255,255,.025);border:1px solid #0e1c2c;border-radius:8px;padding:10px 12px;}
+.poll-cell .pk{font-size:9px;letter-spacing:2px;color:#2a5068;text-transform:uppercase;margin-bottom:4px;}
+.poll-cell .pv{font-size:20px;font-weight:700;}.poll-cell .pu{font-size:9px;color:#2a5068;}
+.dust-banner{border-radius:8px;padding:10px 14px;margin-bottom:10px;display:none;}.dust-banner.active{display:block;}
+.uv-big{text-align:center;padding:10px 0 8px;}
+.uv-num{font-size:50px;font-weight:700;line-height:1;}.uv-sub{font-size:13px;margin-top:5px;letter-spacing:1px;}.uv-rec{font-size:10px;color:#2a5068;margin-top:5px;line-height:1.7;}
+.uv-bar{display:flex;gap:3px;border-radius:6px;overflow:hidden;height:8px;margin:10px 0 0;}
+.uv-seg{flex:1;}
+.uv-scale{display:flex;justify-content:space-between;font-size:9px;color:#1e4060;margin-top:3px;}
+.hrs-uv{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-top:10px;}
+.uv-hour{flex-shrink:0;text-align:center;min-width:44px;}
+.uv-hour .uh-t{font-size:9px;color:#2a5068;}.uv-hour .uh-v{font-size:15px;font-weight:700;margin:3px 0;}.uv-hour .uh-s{font-size:8px;}
+.beach-rec{border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;line-height:1.9;}
+/* INDICI */
+.stato-banner{border-radius:10px;padding:13px 17px;margin-bottom:12px;display:flex;align-items:center;gap:12px;}
+.stato-icon{font-size:23px;flex-shrink:0;}.stato-label{font-size:10px;letter-spacing:3px;color:#2a5068;text-transform:uppercase;margin-bottom:3px;}
+.stato-level{font-size:16px;font-weight:700;letter-spacing:1px;}.stato-desc{font-size:10px;margin-top:3px;line-height:1.6;}
+.massima-banner{background:rgba(239,68,68,.12);border:1.5px solid #ef4444;border-radius:10px;padding:13px 17px;margin-bottom:12px;text-align:center;display:none;}
+.massima-banner .m-title{font-size:15px;font-weight:700;color:#ef4444;letter-spacing:2px;}.massima-banner .m-sub{font-size:10px;color:#fca5a5;margin-top:4px;}
+.sa-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #0b1828;font-size:11px;}.sa-item:last-child{border-bottom:none;}
+.sa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}.sa-key{color:#2a5068;min-width:76px;}.sa-val{color:#b8cfe0;flex:1;}.sa-veto{color:#ef4444;font-size:9px;}
+.rs-wrap{margin-top:10px;padding-top:8px;border-top:1px solid #0b1828;}
+.rs-inputs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0;}
+.rs-inputs input{font-family:inherit;font-size:13px;background:#030810;border:1px solid #1e5a80;color:#b8cfe0;padding:6px 10px;width:110px;border-radius:6px;outline:none;}
+.rs-inputs select{font-family:inherit;font-size:11px;background:#030810;border:1px solid #1e5a80;color:#b8cfe0;padding:6px 8px;border-radius:6px;outline:none;}
+.rs-note{font-size:10px;padding:5px 10px;border-left:2px solid #1e5a80;color:#4a8090;line-height:1.6;display:none;}
+.rs-note.warn{border-color:#f97316;color:#fdba74;}.rs-note.ok{border-color:#22c55e;color:#86efac;}
+.hours-row{display:flex;border-bottom:1px solid #0b1828;padding:7px 0;font-size:11px;flex-wrap:wrap;gap:3px;}.hours-row:last-child{border-bottom:none;}
+.hours-time{color:#3a6080;width:40px;flex-shrink:0;}.hours-vals{flex:1;display:flex;flex-wrap:wrap;gap:3px 8px;}
+.conf-low{opacity:.5;}.conf-tag{font-size:9px;color:#1e4060;margin-left:2px;}
+/* 48H ESTREMI */
+.erb-big{text-align:center;padding:12px 0 10px;}
+.erb-icon{font-size:38px;}.erb-level{font-size:17px;font-weight:700;letter-spacing:2px;margin-top:6px;}.erb-score{font-size:11px;color:#3a6080;margin-top:4px;}
+.ext-table{width:100%;border-collapse:collapse;font-size:11px;}
+.ext-table th{text-align:left;padding:6px 8px;font-size:9px;letter-spacing:2px;color:#2a5068;border-bottom:1px solid #0b1828;}
+.ext-table td{padding:7px 8px;border-bottom:1px solid #060d18;vertical-align:middle;}.ext-table tr:last-child td{border-bottom:none;}
+.prob-wrap{display:flex;align-items:center;gap:8px;}
+.prob-bar{height:6px;border-radius:3px;min-width:2px;}
+.tropo-center{text-align:center;padding:14px 0;}
+.tropo-val{font-size:44px;font-weight:700;}.tropo-sub{font-size:12px;margin-top:4px;letter-spacing:2px;}.tropo-desc{font-size:11px;color:#2a5068;margin-top:8px;max-width:380px;margin-left:auto;margin-right:auto;line-height:1.7;}
+/* SENTINELLE */
+.sent-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;}
+.sent-card{border-radius:8px;padding:10px 13px;border:1px solid #0e1c2c;background:rgba(255,255,255,.02);}
+.sent-name{font-size:9px;letter-spacing:2px;color:#2a5068;text-transform:uppercase;margin-bottom:5px;}
+.sent-wind{font-size:20px;font-weight:700;}.sent-dir{font-size:10px;margin-top:2px;}
+.sent-flag{font-size:9px;margin-top:5px;padding:2px 6px;border-radius:4px;display:inline-block;}
+.sent-flag.ok{background:rgba(34,197,94,.08);color:#22c55e;border:1px solid #22c55e44;}
+.sent-flag.warn{background:rgba(234,179,8,.08);color:#eab308;border:1px solid #eab30844;}
+.sent-flag.alert{background:rgba(249,115,22,.08);color:#f97316;border:1px solid #f9731644;}
+.sent-flag.crit{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid #ef444444;}
+.sent-note{font-size:9px;color:#1e4060;line-height:1.8;padding:6px 10px;border-left:2px solid #0e1c2c;margin-top:4px;}
+/* DATI */
+.row{display:flex;justify-content:space-between;border-bottom:1px solid #0b1828;padding:7px 0;font-size:12px;flex-wrap:wrap;gap:3px;}.row:last-child{border-bottom:none;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.icard{border-radius:8px;padding:12px 14px;}.ival{font-size:24px;font-weight:700;}.isub{font-size:10px;margin-top:3px;}
+.jet-row{display:flex;align-items:center;gap:16px;padding:8px 0;}.jet-val{font-size:32px;font-weight:700;}
+.sst-center{text-align:center;padding:12px 0;}.sst-val{font-size:42px;font-weight:700;}.sst-sub{font-size:12px;margin-top:5px;}
+.error{background:rgba(239,68,68,.08);border:1px solid #ef4444;border-radius:8px;padding:12px;color:#fca5a5;font-size:11px;margin-bottom:12px;display:none;}
+.footer{text-align:center;font-size:9px;color:#0e1c2c;margin-top:16px;padding-top:10px;border-top:1px solid #0a1520;line-height:1.8;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div>
+    <div class="sub">NOWCASTING CONVETTIVO · CASTEL VOLTURNO</div>
+    <h1>41.035°N · 13.942°E</h1>
+    <div class="ts" id="ts">Non ancora caricato — premi AGGIORNA</div>
+    <div style="font-size:9px;color:#1e4060;letter-spacing:1px;margin-top:2px" id="verBadge"></div>
+  </div>
+  <button class="btn-refresh" id="btnRefresh" onclick="loadAll()">↻ AGGIORNA</button>
+</div>
+
+<div class="src-bar">
+  <span class="src-badge" id="src-om">OM: —</span>
+  <span class="src-badge" id="src-sst">SST: —</span>
+  <span class="src-badge" id="src-flood">GloFAS: —</span>
+  <span class="src-badge" id="src-aq">Aria: —</span>
+  <span class="src-badge" id="src-sp">Sent.P: —</span>
+  <span class="src-badge" id="src-sl">Sent.L: —</span>
+  <span class="src-badge" id="src-metar">METAR: —</span>
+  <span class="src-badge" id="src-radar">RADAR: —</span>
+  <span class="src-badge" id="src-sat">SAT: —</span>
+</div>
+
+<!-- BANNER ESTREMI — visibile solo se soglia sopravvivenza attivata -->
+<div class="ext-banner" id="extBanner">
+  <span style="font-size:28px" id="extBIcon">🔴</span>
+  <div>
+    <div style="font-size:15px;font-weight:700;letter-spacing:1px" id="extBTitle"></div>
+    <div style="font-size:10px;margin-top:3px;line-height:1.6" id="extBSub"></div>
+  </div>
+</div>
+
+<div class="card" id="placeholder">
+  <div class="ph"><div class="ico">📡</div><div class="msg">Premi AGGIORNA per caricare i dati</div><div class="det">Open-Meteo · SST Marine · GloFAS · CAMS<br>Sentinelle prossime e lontane</div></div>
+</div>
+
+<div class="card" id="loadingBox" style="display:none">
+  <div class="ldg"><div class="step" id="loadingStep">Caricamento...</div><div class="hint">acquisizione dati in corso</div></div>
+</div>
+
+<div class="error" id="errBox"></div>
+
+<div class="tabs" id="tabs" style="display:none">
+  <button class="tab-btn active" onclick="switchTab('now')">⏱ PREVISIONE 8-12H</button>
+  <button class="tab-btn" onclick="switchTab('ext')">⚡ EVENTI ESTREMI 48H</button>
+  <button class="tab-btn" onclick="switchTab('indnow')">📊 DRIVER PREVISIONE</button>
+  <button class="tab-btn" onclick="switchTab('indext')">📊 DRIVER 48H</button>
+  <button class="tab-btn" onclick="switchTab('cross')">🔀 CALCOLO INCROCIATO</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCHEDA 1 — PREVISIONE METEO AD ALTISSIMA RISOLUZIONE (8-12H)
+     Uso: organizzare la giornata. NON è una predizione di eventi
+     estremi — quella è la Scheda 2, con orizzonte minimo 48h (il
+     tempo tecnico per eventuali contromisure, es. evacuazione).
+     ════════════════════════════════════════════════════════════════ -->
+<div class="tab-content active" id="tab-now">
+  <!-- PATCH v8.13: PRIMA cosa visibile in assoluto. Origine: osservazione
+       dell'utente — chi è colto alla sprovvista da un evento estremo lancia
+       il pannello per orientarsi SUBITO ("cosa ho davanti, quanto durerà").
+       Deve precedere anche la card meteo generica, non seguirla. -->
+  <div class="card" id="eventNowCard" style="display:none">
+    <div class="card-label" id="eventNowLabel" style="font-size:13px">🌧 EVENTO IN CORSO ORA</div>
+    <div id="eventNowDesc" style="font-size:12px;line-height:1.9"></div>
+  </div>
+  <div class="wx-card" id="wxCard">
+    <div class="wx-icon" id="wxIcon">—</div>
+    <div class="wx-label" id="wxLabel" style="color:#2a5068">In attesa</div>
+    <div class="wx-sub" id="wxSub" style="color:#2a5068">Premi AGGIORNA</div>
+  </div>
+  <div class="prec-dual">
+    <div class="prec-card" style="border-color:#ef444420">
+      <div class="pc-label">CONVETTIVA<br>Temporale intenso</div>
+      <div class="pc-drops" id="pd-c-dr">💧💧💧</div>
+      <div class="pc-pct" id="pd-c-pct" style="color:#22c55e">0%</div>
+      <div class="pc-desc" id="pd-c-desc">—</div>
+    </div>
+    <div class="prec-card" style="border-color:#60a5fa20">
+      <div class="pc-label">FRONTALE<br>Pioggia da fronte</div>
+      <div class="pc-drops" id="pd-f-dr">💧</div>
+      <div class="pc-pct" id="pd-f-pct" style="color:#22c55e">0%</div>
+      <div class="pc-desc" id="pd-f-desc">—</div>
+    </div>
+  </div>
+  <div style="font-size:9px;color:#1e4060;line-height:1.8;margin-bottom:12px">
+    💧💧💧 Temporale localizzato, intenso (50–150 mm/h) · <b>Tropopausa = filtro primario</b><br>
+    💧 Pioggia frontale, diffusa, moderata (2–15 mm/h) · <b>Non soppressa da tropo alta</b>
+  </div>
+  <!-- Tabella oraria 8H -->
+  <div class="card">
+    <div class="card-label">ANDAMENTO ORARIO 8H <span style="font-size:9px;color:#1e4060">· ultima 1h confidenza ridotta (±)</span></div>
+    <div id="hoursRows"></div>
+  </div>
+  <!-- Volturno — stato istantaneo (la serie 48h completa è in Scheda 4) -->
+  <div class="river-row" id="riverRow" style="background:rgba(34,197,94,.06);border:1px solid #22c55e22">
+    <div>
+      <div class="rc-label">🌊 Volturno — GloFAS (oggi)</div>
+      <div class="rc-val" id="rcVal" style="color:#22c55e">—</div>
+      <div class="rc-sub" id="rcSub" style="color:#22c55e">—</div>
+    </div>
+    <div style="font-size:22px" id="rcIcon">🟢</div>
+  </div>
+  <!-- Qualità del sole e dell'aria, fuse qui perché servono a organizzare la quotidianità -->
+  <div class="card" id="btn-aria">
+    <div class="card-label">💨 QUALITÀ DELL'ARIA — AQI Europeo (CAMS)</div>
+    <div class="aqi-big"><div class="aqi-num" id="aqiN" style="color:#2a5068">—</div><div class="aqi-sub" id="aqiS" style="color:#2a5068">In attesa</div><div class="aqi-desc" id="aqiD">—</div></div>
+    <div class="dust-banner" id="dustB"><div style="font-size:12px;font-weight:700" id="dustT">🏜</div><div style="font-size:10px;margin-top:4px" id="dustD">—</div></div>
+    <div class="poll-grid">
+      <div class="poll-cell"><div class="pk">PM2.5</div><div class="pv" id="p-pm25" style="color:#2a5068">—</div><div class="pu">µg/m³</div></div>
+      <div class="poll-cell"><div class="pk">PM10</div><div class="pv" id="p-pm10" style="color:#2a5068">—</div><div class="pu">µg/m³</div></div>
+      <div class="poll-cell"><div class="pk">NO₂</div><div class="pv" id="p-no2" style="color:#2a5068">—</div><div class="pu">µg/m³</div></div>
+      <div class="poll-cell"><div class="pk">Ozono</div><div class="pv" id="p-o3" style="color:#2a5068">—</div><div class="pu">µg/m³</div></div>
+      <div class="poll-cell"><div class="pk">Gramigna</div><div class="pv" id="p-grass" style="color:#2a5068">—</div><div class="pu">gr/m³</div></div>
+      <div class="poll-cell"><div class="pk">Betulla</div><div class="pv" id="p-birch" style="color:#2a5068">—</div><div class="pu">gr/m³</div></div>
+    </div>
+    <div id="aqForecast"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">☀ UV INDEX</div>
+    <div class="uv-big"><div class="uv-num" id="uvN" style="color:#2a5068">—</div><div class="uv-sub" id="uvS" style="color:#2a5068">—</div><div class="uv-rec" id="uvR">—</div></div>
+    <div class="uv-bar"><div class="uv-seg" style="background:#22c55e"></div><div class="uv-seg" style="background:#84cc16"></div><div class="uv-seg" style="background:#eab308"></div><div class="uv-seg" style="background:#f97316"></div><div class="uv-seg" style="background:#ef4444"></div><div class="uv-seg" style="background:#9333ea"></div></div>
+    <div style="position:relative;height:12px"><div id="uvMk" style="position:absolute;width:2px;height:12px;top:0;background:#fff;border-radius:1px;transition:left .5s;left:0%"></div></div>
+    <div class="uv-scale"><span>0</span><span>3</span><span>6</span><span>8</span><span>11+</span></div>
+    <div class="card-label" style="margin-top:12px">ANDAMENTO ORARIO</div>
+    <div class="hrs-uv" id="uvHrs"></div>
+    <div id="uvForecast"></div>
+  </div>
+  <div class="beach-rec" id="beachRec" style="background:rgba(34,197,94,.06);border:1px solid #22c55e33">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:5px" id="beachT" style="color:#22c55e">🏖 Condizioni balneari</div>
+    <div id="beachI" style="font-size:10px;line-height:1.9;color:#22c55e">—</div>
+  </div>
+  <div class="card">
+    <div class="card-label">📋 BRIEFING — copia e invia a Claude con "procedi"</div>
+    <pre class="pre-bf" id="bfText">Dati non caricati.</pre>
+    <button class="btn-copy" id="btnCopy" onclick="copyBf()">📋 COPIA BRIEFING</button>
+    <textarea id="cpTA" style="display:none;width:100%;height:80px;margin-top:8px;background:#030810;border:1px solid #1e5a80;color:#7ab3d4;font-family:inherit;font-size:10px;padding:10px;border-radius:8px;resize:none;" readonly></textarea>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCHEDA 2 — PREDIZIONE EVENTI ESTREMI A 48H
+     Uso: tempo tecnico per contromisure (es. evacuazione). Orizzonte
+     minimo 48h dal lancio del pannello, mai più corto — vedi nota
+     PATCH v8.11 nel codice (extractHours) sul bug della finestra dati.
+     ════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-ext">
+  <div class="massima-banner" id="massimaBanner">
+    <div class="m-title">🚨 ALLERTA MASSIMA</div>
+    <div class="m-sub">PRIMO 🔴 + SECONDO 🔴 — Evento convettivo estremo imminente</div>
+  </div>
+  <div class="card">
+    <div class="card-label">RISCHIO EVENTI ESTREMI — soglie di sopravvivenza <span style="font-size:9px;color:#1e4060">· orizzonte 48h</span></div>
+    <div style="font-size:9px;color:#1e4060;margin-bottom:10px;line-height:1.7"><b style="color:#2a5068">Questi non sono eventi di disagio. Sono eventi che minacciano la vita all'aperto.</b><br>Soglie: Precipitazione >50mm/h · Vento raffiche >90km/h · Caldo wet-bulb >28°C · GloFAS >500m³/s</div>
+    <div class="erb-big"><div class="erb-icon" id="erbI">⚪</div><div class="erb-level" id="erbL" style="color:#2a5068">—</div><div class="erb-score" id="erbS">—</div><div class="erb-score" id="erbConsec" style="margin-top:2px"></div></div>
+    <div id="erbDrivers" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">PROBABILITÀ PER CATEGORIA — 48H</div>
+    <table class="ext-table">
+      <thead><tr><th>EVENTO ESTREMO</th><th>PROB.</th><th>DRIVER PRINCIPALE</th></tr></thead>
+      <tbody id="extRows"></tbody>
+    </table>
+    <div style="font-size:9px;color:#1e4060;margin-top:8px;line-height:1.6">Stima fisica — non output statistico certificato · Soglia allerta rossa: ≥60% · Finestra dati: 48h piene (v8.11)</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCHEDA 3 — DRIVER della Scheda 1 (Previsione 8-12h)
+     Indicatori e sentinelle che hanno determinato la previsione ad
+     altissima risoluzione: stato atmosferico ISTANTANEO + sentinelle
+     prossime (entro poche decine di km, segnale a 4-10h).
+     ════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-indnow">
+  <div class="card">
+    <div class="card-label">◈ PRIMO AVVISO — Tropopausa (Stabilità Strutturale, ora attuale)</div>
+    <div class="stato-banner" id="primoBox" style="background:#2a506814;border:1px solid #2a506844">
+      <span class="stato-icon" id="primoI">⚪</span>
+      <div><div class="stato-label">Primo Avviso</div><div class="stato-level" id="primoL" style="color:#2a5068">—</div><div class="stato-desc" id="primoD" style="color:#2a5068">—</div></div>
+    </div>
+    <div>
+      <div class="sa-item"><div class="sa-key">Open-Meteo</div><div class="sa-val" id="pd-om">N/D</div></div>
+      <div class="sa-item"><div class="sa-key">RS 16245</div><div class="sa-val" id="pd-rs">N/D (manuale)</div></div>
+      <div class="sa-item"><div class="sa-key">Coerenza</div><div class="sa-val" id="pd-coe">—</div></div>
+    </div>
+    <div class="rs-wrap">
+      <div style="font-size:10px;color:#1e4060;cursor:pointer;padding:5px 0;display:flex;align-items:center;gap:6px;user-select:none" onclick="toggleRs()">
+        <span id="rsArr">▶</span><span>VALIDAZIONE OPZIONALE — RS Pratica di Mare WMO 16245 (dopo 16:00 CET)</span>
+      </div>
+      <div id="rsPanel" style="display:none;padding-top:6px;border-top:1px solid #0b1828">
+        <div style="font-size:9px;color:#1e4060;margin-bottom:7px;line-height:1.6">Tropopausa già acquisita automaticamente. Inserire RS solo per verifica coerenza.</div>
+        <div class="rs-inputs">
+          <span style="font-size:10px;color:#2a5068">Tropo RS (km):</span>
+          <input type="number" id="rsInput" step="0.01" min="5" max="20" placeholder="es. 11.85" oninput="onRsChange()">
+          <select id="rsRun" onchange="onRsChange()"><option>00z</option><option selected>12z</option></select>
+          <button class="tab-btn" onclick="clearRs()">✕</button>
+        </div>
+        <div class="rs-note" id="rsNote"></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" id="miniCards"></div>
+  <!-- METAR — osservazioni reali, Livello 1 (v9.3) -->
+  <div class="card" id="metarCard">
+    <div class="card-label">📡 OSSERVAZIONI REALI — METAR LIRM Grazzanise
+      <span style="font-size:9px;color:#1e4060"> · aggiornamento ~30min · dato misurato, non modello</span>
+    </div>
+    <div id="metarNow" style="font-size:11px;line-height:2;padding:4px 0">—</div>
+    <div class="card-label" style="margin-top:10px">METAR SENTINELLE — cross-check osservativo</div>
+    <div id="metarSents" style="font-size:10px;line-height:1.9;color:#3a6080">—</div>
+    <div style="font-size:9px;color:#1e4060;margin-top:8px;line-height:1.6">
+      Gerarchia: osservazione METAR &gt; previsione NWP. Se METAR contraddice Open-Meteo, il pannello usa METAR come verità.
+    </div>
+  </div>
+
+  <!-- v9.9beta: RADAR REALE — DPC primario, RainViewer di riserva.
+       Nato da un bug reale osservato sul campo (5-6 luglio 2026): il banner
+       "PIOGGIA IN ATTO" poteva scattare da soli proxy fisici, senza alcuna
+       conferma osservativa, anche a cielo sereno. Questa card fornisce quella
+       conferma; calcWx() la usa per sopprimere il banner se il radar reale
+       mostra cielo asciutto. Stessa gerarchia già in uso per METAR:
+       osservazione > previsione, silenziosamente degradata se entrambe le
+       fonti radar falliscono (nessun blocco, nessun errore visibile). -->
+  <div class="card" id="radarCard">
+    <div class="card-label">📡 RADAR REALE — DPC / RainViewer
+      <span style="font-size:9px;color:#1e4060"> · conferma osservativa su pioggia in atto</span>
+    </div>
+    <div id="radarNow" style="font-size:11px;line-height:2;padding:4px 0">—</div>
+  </div>
+
+  <!-- v9.9beta: SATELLITE EUMETSAT — vista AMPIA (Mediterraneo/Europa), non
+       un punto stretto. Serve alla sorveglianza di pattern a scala più larga
+       (es. ciclogenesi Baleari, fronte russo-scandinavo) che il radar a terra
+       non può vedere per limite fisico di portata. Solo informativo in questa
+       versione: non corregge ancora i punteggi (il livello di discernimento
+       che decide cosa è rilevante per le coordinate resta da progettare). -->
+  <div class="card" id="satCard">
+    <div class="card-label">🛰️ SATELLITE EUMETSAT — vista ampia Mediterraneo/Europa
+      <span style="font-size:9px;color:#1e4060"> · solo informativo, non corregge i punteggi</span>
+    </div>
+    <div id="satImgs" style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+      <div><div style="font-size:9px;color:#3a6080;margin-bottom:2px">Convection RGB (temporali severi)</div><img id="satConv" style="width:100%;border-radius:4px;display:none"></div>
+      <div><div style="font-size:9px;color:#3a6080;margin-bottom:2px">Airmass RGB (pattern sinottico)</div><img id="satAirmass" style="width:100%;border-radius:4px;display:none"></div>
+      <div><div style="font-size:9px;color:#3a6080;margin-bottom:2px">Lightning Imager — AFA (fulminazione)</div><img id="satLightning" style="width:100%;border-radius:4px;display:none"></div>
+    </div>
+    <div id="satStatus" style="font-size:10px;color:#1e4060;margin-top:6px">—</div>
+  </div>
+  <div class="card"><div class="card-label">PROFILO VERTICALE</div><div id="profileRows"></div></div>
+  <div class="card"><div class="card-label">JET 250 hPa</div><div class="jet-row" id="jetRow"></div></div>
+  <div class="card"><div class="card-label">SST TIRRENO — Marine API</div><div class="sst-center" id="sstDisp"></div></div>
+  <div class="card" id="seaCard" style="display:none"><div class="card-label">SEA STATE</div><div id="seaRows"></div></div>
+  <div class="card">
+    <div class="card-label">SENTINELLE PROSSIME — Campano-Locale (Piana · Golfo di Napoli)</div>
+    <div class="sent-grid" id="sentNearNE"></div>
+    <div class="card-label" style="margin-top:10px">SENTINELLE PROSSIME — Tirreno Medio-Basso (sentinelle marine avanzate)</div>
+    <div class="sent-grid" id="sentNearW"></div>
+    <div class="sent-note">Ponza/C.Miseno/Fiumicino con vento SW&gt;15 km/h → fronte in avvicinamento entro 4–10h · alimentano frontale 8H</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCHEDA 4 — DRIVER della Scheda 2 (Eventi estremi 48h)
+     Indicatori e sentinelle che hanno determinato la predizione a
+     48h: indice composito convettivo, tropopausa con trend/deviazione
+     stagionale, sentinelle lontane (centinaia di km, anticipo 10-36h),
+     serie GloFAS completa.
+     ════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-indext">
+  <div class="card">
+    <div class="card-label">◈ SECONDO AVVISO — Indice Composito Convettivo</div>
+    <div class="stato-banner" id="secondoBox" style="background:#2a506814;border:1px solid #2a506844">
+      <span class="stato-icon" id="secondoI">⚪</span>
+      <div><div class="stato-label">CAPE/CIN · LI · VIL · Trigger · SST+Umidità</div><div class="stato-level" id="secondoL" style="color:#2a5068">—</div><div class="stato-desc" id="secondoD" style="color:#2a5068">—</div></div>
+    </div>
+    <div>
+      <div class="sa-item"><div class="sa-dot" id="sd-cape" style="background:#2a5068"></div><div class="sa-key">CAPE−CIN</div><div class="sa-val" id="sv-cape">N/D</div></div>
+      <div class="sa-item"><div class="sa-dot" id="sd-li" style="background:#2a5068"></div><div class="sa-key">LI</div><div class="sa-val" id="sv-li">N/D</div></div>
+      <div class="sa-item"><div class="sa-dot" id="sd-vil" style="background:#2a5068"></div><div class="sa-key">VIL proxy</div><div class="sa-val" id="sv-vil">N/D</div><div class="sa-veto" id="sv-veto"></div></div>
+      <div class="sa-item"><div class="sa-dot" id="sd-trig" style="background:#2a5068"></div><div class="sa-key">Trigger</div><div class="sa-val" id="sv-trig">N/D</div></div>
+      <div class="sa-item"><div class="sa-dot" id="sd-umid" style="background:#2a5068"></div><div class="sa-key">SST+Umidità (ΔT)</div><div class="sa-val" id="sv-umid">N/D</div></div>
+    </div>
+    <div style="font-size:9px;color:#1e4060;margin-top:8px;padding-top:6px;border-top:1px solid #0b1828;line-height:1.7">VIL=0 → convettiva max 25% (salvo deroga ⚡) · LI&gt;+5K → soppressione granitica · CIN+PBL → veto notturno (inversione radiativa) o tappo mattutino · CAPE&gt;2500+LI&lt;0+CIN&lt;400 → deroga loaded-gun (bypassa veto tropopausa, v8.10)</div>
+  </div>
+  <div class="card"><div class="card-label">TROPOPAUSA — Filtro primario (trend 48h)</div><div class="tropo-center" id="tropoDisp"></div></div>
+  <div class="card">
+    <div class="card-label">SENTINELLE LONTANE — Ovest/Sudovest (Atlantico · Mediterraneo occidentale)</div>
+    <div class="sent-grid" id="sentFarW"></div>
+    <div class="sent-note" id="sentFarWNote">Anticipo su CV: Gibilterra 24–36h · Baleari 16–24h · Barcellona 20–30h · Algeri 10–18h</div>
+    <div class="card-label" style="margin-top:12px">SENTINELLA LONTANA — Nordest (Continentale)</div>
+    <div class="sent-grid" id="sentFarNE"></div>
+    <div class="sent-note">Belgrado: T850hPa e Z500hPa · Anticipo Bora/gelo estremo su CV: 12–24h</div>
+  </div>
+  <div class="card">
+    <div class="card-label" id="fiumeLabel">🌊 VOLTURNO — GloFAS (serie 7gg)</div>
+    <div id="fiumeNow" style="text-align:center;padding:10px 0"></div>
+    <div id="fiumeRows"></div>
+    <div style="font-size:9px;color:#1e4060;margin-top:6px;line-height:1.6">&lt;150 normale · 150–500 moderato · 500–1000 elevato ⚠ · &gt;1000 critico 🔴</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCHEDA 5 — CALCOLO INCROCIATO
+     I driver della Scheda 3 (istantanei) influenzano in parte la
+     Scheda 2 (48h) e i driver della Scheda 4 (48h) influenzano in
+     parte la Scheda 1 (8-12h). Qui rendiamo esplicite, con numeri,
+     le UNICHE due vie di contaminazione intenzionali presenti nel
+     codice — non ce ne sono altre.
+     ════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-cross">
+  <div class="card">
+    <div style="font-size:9px;color:#1e4060;line-height:1.7;padding:6px 10px;border-left:2px solid #1e5a80;margin-bottom:4px">ℹ Queste sono le <b style="color:#4a8090">uniche due vie di contaminazione</b> oggi presenti tra le pipeline "previsione" (Scheda 1/3) e "predizione 48h" (Scheda 2/4) — non stime, numeri reali ricalcolati ad ogni AGGIORNA.</div>
+  </div>
+  <div class="card">
+    <div class="card-label">🔀 ISTANTANEO → 48H <span style="font-size:9px;color:#1e4060">(quanto Scheda 3 pesa su Scheda 2)</span></div>
+    <div id="crossA" style="font-size:11px;line-height:2.1"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">🔀 48H → ISTANTANEO <span style="font-size:9px;color:#1e4060">(quanto Scheda 4 pesa su Scheda 1)</span></div>
+    <div id="crossB" style="font-size:11px;line-height:2.1"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">⚠ COSA NON è INCROCIATO</div>
+    <div style="font-size:9px;color:#1e4060;line-height:1.8">Tutti gli altri indicatori (AQI, UV, mare, sentinelle prossime/lontane, GloFAS) restano confinati alla propria scheda di competenza. Se in futuro si aggiunge una nuova via di contaminazione tra le due pipeline di calcolo, va documentata qui — è la regola che mantiene la distinzione tra "previsione" e "predizione" leggibile nel tempo.</div>
+  </div>
+</div>
+
+
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta1</div>
+
+</div>
+<script>
+// PATCH v8.10: versione unica — fonte di verità unica per title/footer/briefing.
+// Prima il numero di versione era scritto a mano in 3 punti diversi del file
+// (title, footer statico, footer JS) e si disallineava facilmente quando si
+// dimenticava di aggiornarne uno. Ora c'è una sola costante; il briefing
+// testuale la include esplicitamente, così è verificabile anche da chi
+// consulta il sito pubblicato (es. GitHub Pages) senza dover ispezionare
+// il codice o scrollare fino al footer — basta guardare il testo copiato.
+// PATCH v9.0_Belardo: revisione strutturale dopo stress test mirato sul
+// motore di calcolo (39 scenari sintetici + 500 iterazioni di fuzzing su
+// input estremi/mancanti — 0 eccezioni, 0 NaN, 0 ID duplicati). Include i
+// fix v8.14: finestra 8h centralizzata (get8hWindow), calcWx consapevole
+// della deroga loaded-gun, badge ⚡ in tabella oraria, pfH forzato a 0 su
+// fronte sterile, box dedicato per la stima durata evento, nota esplicita
+// in Scheda 5, maxConsec promosso a indicatore visibile in card 48h.
+// PATCH Belardo_v9.9beta1: quattro fix di coerenza approvati dopo verifica
+// distanziale (obiettivo: evento in corso senza errore · previsione 8h alta
+// confidenza fino a +7h · predizione estremi fino a +49h):
+//
+// FIX-1 (CRITICO — spiegava il 62% frontale del 07/07/2026 10:50 con METAR
+// sereno, radar DPC/SRI asciutto, sentinelle tutte Neutro, nubi 0%): il cap
+// su pF scattava solo se frontInProgress (impossibile con mxPrec>=10) oppure
+// mxPrec<10. Per mxPrec tra 10 e la soglia intermedia, NESSUN cap si
+// applicava e pF restava libero fino a 90. Fix: il cap "preevento"
+// (capPreevento) ora si applica anche quando mxPrec è nella fascia
+// intermedia e frontInProgress è falso, non solo sotto 10.
+// FIX-2: radarVetoPioggia sopprimeva le label testuali in calcWx ma non la
+// card numerica "FRONTALE %" — che restava a mostrare un valore/giudizio in
+// contraddizione diretta con la card radar due riquadri sotto. Fix: stessa
+// gerarchia osservazione>previsione estesa al numero e al sottotitolo.
+// FIX-3: fetchOM/fetchMarine usavano forecast_days=2 (00:00 oggi→23:00
+// domani sul calendario, non 48h da "ora"): lanciando il pannello al
+// mattino restavano solo ~37h utili, non 49, proprio quando il preavviso a
+// Protezione Civile conta di più. Fix: forecast_days=3, ≥49h residue
+// garantite qualunque sia l'ora di refresh.
+// FIX-4: tabella oraria 8H marcava confidenza ridotta da idx>=7 (già a
+// +7h), contro l'obiettivo dichiarato di confidenza alta ALMENO fino alla
+// settima ora. Fix: soglia spostata a idx>=8, solo l'ultima ora (+8h)
+// resta segnalata come meno affidabile.
+// (round 2, stessa versione — nessuna modifica di nomenclatura richiesta)
+// FIX-5: il badge orario 🌬sentinel/〰fronte? nella tabella 8H usava il
+// pd.front grezzo, pre-veto radar — terzo punto di rendering non coperto
+// da FIX-2. Ora silenziato allo stesso modo quando radarConfirmedDry.
+// FIX-6: SUPERFICIE (T/Dp/RH) leggeva sempre NWP, mai il METAR osservato
+// due riquadri sotto, in contrasto con la gerarchia osservazione>previsione
+// già applicata a nubi/pioggia. Fix: se il METAR è fresco (≤180min),
+// t2m/dp vengono sovrascritti in place e RH ricalcolata con Magnus da
+// T/Dp METAR, così i tre valori restano mutuamente coerenti.
+// NOMENCLATURA: Belardo_v9.9beta2 è riservata all'integrazione della griglia
+// di monitoraggio delle aree di generazione dei fenomeni convettivi
+// (sistema in test separato, non ancora in questo file). Fino a quel merge,
+// tutte le patch su questo pannello restano sotto Belardo_v9.9beta1 — i
+// round successivi si distinguono nei commenti (round N), non nel numero
+// di versione esposto in UI.
+const APP_VERSION='Belardo_v9.9beta1';
+// FIX Belardo_v9.9beta1 (round 5): il titolo/footer statici in HTML mostravano un numero di
+// versione non allineato (9.6) mentre l'app girava già su 9.9beta1 — la
+// riga document.title veniva scritta SOLO dentro renderAll() a fine
+// caricamento riuscito (riga ~2170). Se il caricamento falliva (blocco
+// catch di loadAll), il tab del browser restava bloccato sulla versione
+// statica sbagliata proprio nel momento in cui serve sapere quale build
+// ha fallito. Impostare qui, a caricamento script, rende titolo/footer
+// corretti SEMPRE, indipendentemente dall'esito del fetch.
+document.title=`Nowcasting CV ${APP_VERSION} — Castel Volturno`;
+document.addEventListener('DOMContentLoaded',()=>{
+  const vb=document.getElementById('verBadge');if(vb)vb.textContent=APP_VERSION;
+  const ft=document.getElementById('footer');if(ft)ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${APP_VERSION}`;
+});
+// Fallback se DOMContentLoaded è già passato (script in fondo al body)
+if(document.readyState!=='loading'){
+  const vb=document.getElementById('verBadge');if(vb)vb.textContent=APP_VERSION;
+  const ft=document.getElementById('footer');if(ft)ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${APP_VERSION}`;
+}
+const CV={lat:41.035,lon:13.942},VOLT={lat:41.1,lon:14.2};
+const TROPO={open:9000,closed:11000},SST_TH=15,T_MED=15,T_DELTA=15,MAX_RS=1.5;
+let STATE={},rsKm=null;
+// ── GATE OSSERVATIVO CENTRALIZZATO (Belardo_v9.9beta1, round 5) ───────────
+// Unica fonte di verità per "cielo confermato asciutto/sereno da
+// osservazione diretta" (radar reale DPC/RainViewer + METAR), usata da pC
+// (calcPD), assessRisk e assessSecondo — le tre sezioni del pannello che
+// prima potevano contraddirsi tra loro (ROSSO/ELEVATO/0% con gli stessi
+// dati, la sera dell'8/7/2026). Centralizzata per evitare che tre copie
+// indipendenti della stessa condizione si disallineino nel tempo, come già
+// successo con la finestra 8h (v8.14) e con il numero di versione (v8.10).
+// USA STATE, quindi richiede STATE già popolato: dentro loadAll(), prima
+// che STATE={...} venga assegnato, va usata la stessa logica con le
+// variabili locali radarStatus/metarData ancora in scope (vedi assessRisk
+// in loadAll) — qui si legge sempre lo stato dell'ULTIMO render completato.
+function isObsConfirmedDry(){
+  const r=STATE.radarStatus,m=STATE.metarData?.primary;
+  const radarDry=r!=null&&r.hasEcho===false;
+  const metarClear=m!=null&&m.cloudPct!=null&&m.cloudPct<20&&m.rainNow!==true;
+  return radarDry||metarClear;
+}
+const LVC={verde:'#22c55e',giallo:'#eab308',arancio:'#f97316',rosso:'#ef4444',grigio:'#2a5068'};
+const LVI={verde:'🟢',giallo:'🟡',arancio:'🟠',rosso:'🔴',grigio:'⚪'};
+const LVL={verde:'VERDE',giallo:'GIALLO',arancio:'ARANCIO',rosso:'ROSSO',grigio:'—'};
+function lvS(n){return['verde','giallo','arancio','rosso'][Math.max(0,Math.min(3,n))];}
+function capeCol(v){return v>2500?'#ef4444':v>1000?'#f97316':v>300?'#eab308':'#22c55e';}
+function liCol(v){return v<-5?'#ef4444':v<-2?'#eab308':v<0?'#84cc16':'#22c55e';}
+function sstCol(v){return v==null?'#4a7fa0':v>20?'#ef4444':v>SST_TH?'#f97316':'#60a5fa';}
+function fCol(v){return v==null?'#4a7fa0':v>1000?'#ef4444':v>500?'#f97316':v>150?'#eab308':'#22c55e';}
+function fLbl(v){return v>1000?'🔴 CRITICO':v>500?'⚠ ELEVATO':v>150?'▲ MODERATO':'✓ NORMALE';}
+function pCol(v,t){return v==null?'#2a5068':v<=t[0]?'#22c55e':v<=t[1]?'#eab308':v<=t[2]?'#f97316':'#ef4444';}
+function wdL(d){if(d==null)return'—';return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];}
+
+// SENTINELLE CONFIG
+// Anello prossimo: medio-basso Tirreno e piana campana.
+// Pescara/Ancona/Bari (adriatiche) rimosse: l'Appennino funge da sbarramento orografico
+// e invalida qualsiasi segnale cinematico per il litorale domizio.
+const SNEAR=[
+  {id:'gz',name:'Grazzanise',  label:'Piana Campana',  lat:41.060,lon:14.075,grp:'ne'},
+  {id:'na',name:'Napoli Cdch.',label:'Golfo di Napoli', lat:40.886,lon:14.290,grp:'ne'},
+  {id:'pz',name:'Ponza',       label:'Tirreno Cent.',   lat:40.897,lon:12.966,grp:'w'},
+  {id:'cm',name:'C.Miseno',    label:'Bacino Flegreo',  lat:40.786,lon:14.083,grp:'w'},
+  {id:'fi',name:'Fiumicino',   label:'Tirreno N',       lat:41.800,lon:12.235,grp:'w'},
+];
+const SFAR=[
+  {id:'gi',name:'Gibilterra', label:'Atlantico',   lat:35.99,lon:-5.36,grp:'w'},
+  {id:'pa',name:'Baleari',    label:'Med.Occ.',    lat:39.57,lon:2.65, grp:'w'},
+  {id:'bc',name:'Barcellona', label:'Med.NW',      lat:41.39,lon:2.16, grp:'w'},
+  {id:'al',name:'Algeri',     label:'Sud·Africa',  lat:36.74,lon:3.06, grp:'w'},
+  {id:'bg',name:'Belgrado',   label:'Continentale',lat:44.82,lon:20.46,grp:'ne'},
+];
+
+// ── METAR — LIVELLO 1 OSSERVATIVO (v9.3) ─────────────────────────────────
+// Fonte: aviationweather.gov API pubblica, no autenticazione richiesta.
+// STAZIONI:
+//   LIRM  Grazzanise       — sentinella locale, 3km da CV (primaria)
+//   LIRN  Napoli Cdch.     — sentinella campana
+//   LIRF  Fiumicino        — sentinella tirreno N
+//   LXGB  Gibilterra       — sentinella atlantica
+//   LEBL  Barcellona       — sentinella Med NW
+//   DAAG  Algeri           — sentinella Sud Africa
+//   LYBE  Belgrado         — sentinella continentale NE
+// GERARCHIA: osservazione METAR > previsione NWP.
+// Se METAR LIRM contraddice Open-Meteo (es. METAR=secco vs OM=3.6mm/h),
+// il pannello usa METAR come verità per: stato cielo, pioggia in corso,
+// vento in superficie, copertura nuvolosa.
+
+const METAR_STATIONS={
+  primary:'LIRM',
+  sents:['LIRN','LIRF','LXGB','LEBL','DAAG','LYBE']
+};
+// FIX Belardo_v9.9beta1 (round 7): questa mappa esisteva SOLO localmente
+// dentro la funzione di render del cross-check METAR (riga ~2288) — per
+// riusarla nel briefing testuale (senza ricopiarla una terza volta) è ora
+// condivisa qui, unica fonte di verità id→nome leggibile.
+const METAR_SENT_NAMES={LIRN:'Napoli Cdch.',LIRF:'Fiumicino',LXGB:'Gibilterra',LEBL:'Barcellona',DAAG:'Algeri',LYBE:'Belgrado'};
+
+// v9.9: i proxy CORS pubblici gratuiti (allorigins.win, codetabs.com) si
+// sono rivelati semplicemente NON AFFIDABILI — verificato navigandoli
+// direttamente (non da fetch()): entrambi rispondono con errore server-side
+// (501 / Host Error) anche per un URL banale come example.com, da reti e
+// paesi diversi. Non è un blocco DNS/operatore (ipotesi scartata, smentita
+// dai test) né un problema di velocità (943 Mbps allo speedtest). Sono
+// servizi terzi gratuiti fuori dal nostro controllo, e in questo momento
+// non funzionano. aviationweather.gov invece è raggiungibile e risponde
+// correttamente — il limite è solo il CORS lato browser per le chiamate
+// fetch() da pagina (loro stessi lo dichiarano non supportato).
+// Soluzione robusta: un proxy personale su Cloudflare Worker (gratuito),
+// sotto il tuo controllo, che non dipende dalla salute di servizi terzi.
+// Se impostato qui sotto, viene provato per primo; i proxy pubblici restano
+// solo come rete di sicurezza residua. Codice del Worker (da incollare su
+// workers.cloudflare.com, piano gratuito, ~2 minuti):
+//
+//   export default {
+//     async fetch(request) {
+//       const target = new URL(request.url).searchParams.get('url');
+//       if (!target) return new Response('missing url', {status:400});
+//       const r = await fetch(target, {headers:{'User-Agent':'nowcasting-cv/1.0'}});
+//       return new Response(await r.arrayBuffer(), {
+//         status: r.status,
+//         headers: {'Content-Type': r.headers.get('Content-Type')||'application/json',
+//                    'Access-Control-Allow-Origin': '*'}
+//       });
+//     }
+//   }
+//
+// Dopo il deploy, incolla qui sotto l'URL assegnato (tipo
+// https://nome-a-caso.tuoaccount.workers.dev):
+const CUSTOM_CORS_PROXY = 'https://metar-proxy.free-genesis.workers.dev'; // proxy personale, verificato funzionante 2026-07-04
+
+async function fetchMETAR(ids){
+  const q=ids.join(',');
+  // v9.6: CORRETTO un assunto sbagliato — aviationweather.gov NON supporta
+  // CORS (lo dichiara la loro stessa documentazione: "Cross-origin resource
+  // sharing is not permitted at this time"). Per questo il fetch diretto dal
+  // browser falliva SEMPRE con un TypeError generico ("Failed to fetch"),
+  // indistinguibile da un errore di rete e silenziato dal catch(_) — la card
+  // restava perennemente su "acquisizione dati in corso" per poi cadere sul
+  // fallback Open-Meteo current. Le due URL restano corrette, cambia solo
+  // il modo in cui le raggiungiamo.
+  // v9.7: la v9.6 usava allorigins.win + corsproxy.io, ma NESSUNO dei due
+  // funziona in pratica da questo contesto: corsproxy.io ha ristretto l'uso
+  // gratuito a "localhost e ambienti di sviluppo" (CodePen, StackBlitz,
+  // ecc.) — un browser mobile che apre un file locale ha origin "null", non
+  // in whitelist, quindi risposta bloccata. allorigins.win resta pubblico ma
+  // è dichiaratamente instabile (~50% di richieste falliscono con CORS
+  // header mancante, vedi issue aperte sul suo repo). Sostituito con
+  // codetabs.com, un proxy pensato per funzionare da QUALSIASI origine senza
+  // whitelist né chiave. Teniamo allorigins come seconda rete di sicurezza
+  // e il tentativo diretto per ultimo. In più, ora accumuliamo gli errori
+  // reali invece di inghiottirli in un catch(_) muto: se tutto fallisce di
+  // nuovo, il messaggio d'errore dirà ESATTAMENTE dove e perché, senza dover
+  // più leggerlo da uno screenshot.
+  const targets=[
+    `https://aviationweather.gov/api/data/metar?ids=${q}&format=json&taf=false&hours=2`,
+    `https://aviationweather.gov/cgi-bin/data/metar.php?ids=${q}&hours=2&format=json`,
+  ];
+  const proxies=[
+    ...(CUSTOM_CORS_PROXY?[{name:'personale',wrap:u=>`${CUSTOM_CORS_PROXY}/?url=${encodeURIComponent(u)}`}]:[]),
+    {name:'codetabs',   wrap:u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`},
+    {name:'allorigins', wrap:u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`},
+    {name:'diretto',    wrap:u=>u},
+  ];
+  const errors=[];
+  for(const {name,wrap} of proxies){
+    for(const target of targets){
+      try{
+        const r=await fetch(wrap(target),{signal:AbortSignal.timeout(8000)});
+        if(!r.ok){errors.push(`${name}:HTTP${r.status}`);continue;}
+        const d=await r.json();
+        if(Array.isArray(d)&&d.length>0)return d;
+        errors.push(`${name}:vuoto`);
+      }catch(e){errors.push(`${name}:${String(e?.message??e).slice(0,40)}`);}
+    }
+  }
+  throw new Error('METAR non raggiungibile — '+errors.join(' | '));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v9.9beta — RADAR REALE (DPC primario, RainViewer di riserva)
+// Entrambe le fonti validate su prototipo isolato prima dell'integrazione
+// (test 4-6 luglio 2026: assenza confermata su Castel Volturno, presenza
+// confermata su temporale reale in Bulgaria). Griglia/template DPC presi
+// da scoperta live del WMTS Capabilities, non indovinati — vedi
+// dpc-radar-test.html per la cronologia completa del debug.
+// ═══════════════════════════════════════════════════════════════
+async function fetchDPCRadar(lat,lon){
+  const Z=8; // ~78km per tile — buon compromesso dettaglio/area per un punto
+  const matrixWidth=2*Math.pow(2,Z), matrixHeight=Math.pow(2,Z);
+  const tileDegLon=360/matrixWidth, tileDegLat=180/matrixHeight;
+  const tileCol=Math.floor((lon+180)/tileDegLon);
+  const tileRow=Math.floor((90-lat)/tileDegLat);
+  const url=`https://radar-geowebcache.protezionecivile.it/service/wmts/rest/radar:sri/sri/EPSG:4326/EPSG:4326:${Z}/${tileRow}/${tileCol}?format=image/png`;
+  const resp=await fetch(`${CUSTOM_CORS_PROXY}/?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(12000)});
+  const ct=resp.headers.get('Content-Type')||'';
+  if(!ct.includes('image'))throw new Error('DPC risposta non immagine: '+ct);
+  const blob=await resp.blob();
+  const objUrl=URL.createObjectURL(blob);
+  const img=new Image();
+  await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error('DPC immagine non decodificabile'));img.src=objUrl;});
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+  const fracX=((lon+180)/tileDegLon)-tileCol, fracY=((90-lat)/tileDegLat)-tileRow;
+  const px=Math.min(255,Math.max(0,Math.floor(fracX*256))), py=Math.min(255,Math.max(0,Math.floor(fracY*256)));
+  const[r,g,b,a]=ctx.getImageData(px,py,1,1).data;
+  // Il nero puro (o quasi-grigio) NON è un colore reale della scala SRI —
+  // è sfondo/trascurabile, anche con alpha non nullo (bug reale scoperto e
+  // corretto durante la validazione: vedi commento in dpc-radar-test.html).
+  const mx=Math.max(r,g,b)/255, mn=Math.min(r,g,b)/255;
+  const isRealColor=!(mx<0.08||(mx-mn)<0.04);
+  return{hasEcho:a>=15&&isRealColor,source:'DPC/SRI',raw:{r,g,b,a}};
+}
+
+async function fetchRainViewerRadar(lat,lon){
+  const rvRes=await fetch('https://api.rainviewer.com/public/weather-maps.json',{signal:AbortSignal.timeout(8000)});
+  if(!rvRes.ok)throw new Error('RainViewer HTTP '+rvRes.status);
+  const rv=await rvRes.json();
+  const frame=rv.radar?.past?.[rv.radar.past.length-1];
+  if(!frame)throw new Error('RainViewer: nessun frame disponibile');
+  const Z=7; // massimo documentato RainViewer
+  const fx=(lon+180)/360*Math.pow(2,Z);
+  const rad=lat*Math.PI/180;
+  const fy=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*Math.pow(2,Z);
+  const tileX=Math.floor(fx), tileY=Math.floor(fy);
+  const url=`${rv.host}${frame.path}/256/${Z}/${tileX}/${tileY}/2/1_1.png`;
+  const img=new Image();img.crossOrigin='anonymous';
+  await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error('RainViewer tile non caricata'));img.src=url;});
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+  const px=Math.min(255,Math.max(0,Math.floor((fx-tileX)*256))), py=Math.min(255,Math.max(0,Math.floor((fy-tileY)*256)));
+  const[r,g,b,a]=ctx.getImageData(px,py,1,1).data;
+  return{hasEcho:a>=15,source:'RainViewer',raw:{r,g,b,a}};
+}
+
+async function fetchRealRadar(lat,lon){
+  try{return await fetchDPCRadar(lat,lon);}catch(e){console.warn('DPC radar fail',e);}
+  try{return await fetchRainViewerRadar(lat,lon);}catch(e){console.warn('RainViewer radar fail',e);}
+  return null; // entrambe le fonti non disponibili — degradazione silenziosa, nessun blocco
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v9.9beta — SATELLITE EUMETSAT, vista ampia (solo informativo)
+// ═══════════════════════════════════════════════════════════════
+async function fetchEumetsatWide(){
+  const base='https://view.eumetsat.int/geoserver/wms';
+  const bbox='-15,30,35,60'; // Mediterraneo + Europa occidentale-centrale
+  async function getLayer(name){
+    const url=`${base}?service=WMS&version=1.3.0&request=GetMap&layers=${encodeURIComponent(name)}&styles=&format=image/png&transparent=true&crs=EPSG:4326&bbox=${bbox}&width=640&height=548`;
+    const resp=await fetch(`${CUSTOM_CORS_PROXY}/?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(20000)});
+    const ct=resp.headers.get('Content-Type')||'';
+    if(!ct.includes('image'))throw new Error(name+' non immagine: '+ct);
+    return URL.createObjectURL(await resp.blob());
+  }
+  const out={ok:0,fail:0};
+  try{out.conv=await getLayer('msg_fes:rgb_convection');out.ok++;}catch(e){out.fail++;console.warn(e);}
+  try{out.airmass=await getLayer('msg_fes:rgb_airmass');out.ok++;}catch(e){out.fail++;console.warn(e);}
+  try{out.lightning=await getLayer('mtg_fd:li_afa');out.ok++;}catch(e){out.fail++;console.warn(e);}
+  return out;
+}
+
+function parseMETAR(raw){
+  if(!raw)return null;
+  // Normalizza i nomi dei campi tra le versioni dell'API aviationweather.gov
+  // v1 legacy (ADDS): rawOb, stationId, wspd, wgst, wdir, sky[], wxString, temp, dewp, visib
+  // v2 corrente (verificato contro schema reale api/data/metar?format=json):
+  //   il campo raw resta "rawOb" — MA le nuvole sono in "clouds":[{cover,base}],
+  //   non in "sky_condition"/"sky_cover" come si assumeva. Questo è il motivo
+  //   per cui cloudPct finiva sempre a derivarsi dal regex fallback sul rawOb
+  //   invece che dal campo strutturato. obsTime inoltre è epoch UNIX in SECONDI.
+  const rawOb=raw.rawOb??raw.raw_ob??raw.raw??'';
+  if(!rawOb)return null;
+  const ws   =(raw.wspd??raw.wind_speed_kt??0)*1.852;  // kt→km/h
+  const wsRaw= raw.wspd??raw.wind_speed_kt??0;
+  // wspd in API v1 è già in kt, convertiamo; se già in km/h salta
+  const wsKmh=wsRaw>0&&wsRaw<100?wsRaw*1.852:wsRaw;
+  const wgRaw= raw.wgst??raw.wind_gust_kt??wsRaw;
+  const wgKmh=wgRaw>0&&wgRaw<100?wgRaw*1.852:wgRaw;
+  const wd   = raw.wdir??raw.wind_dir_degrees??null;
+  // sky — campo reale "clouds":[{cover,base}]; sky/sky_condition tenuti come
+  // alias difensivi per l'endpoint legacy cgi-bin, che può rispondere diverso.
+  const skyArr=raw.clouds??raw.sky??raw.sky_condition??[];
+  let cloudFraction=0,ceilFt=null;
+  for(const s of skyArr){
+    const cov=s.cover??s.skyCover??s.sky_cover??'';
+    const base=s.base??s.cloudBase??s.cloud_base_ft_agl??null;
+    const frac={'SKC':0,'CLR':0,'NSC':0,'CAVOK':0,'FEW':1,'SCT':3,'BKN':6,'OVC':8,'VV':8}[cov]??0;
+    if(frac>cloudFraction){cloudFraction=frac;ceilFt=base;}
+  }
+  // fallback: se sky vuoto, prova a parsare dal rawOb direttamente
+  if(skyArr.length===0){
+    const skyMatch=rawOb.match(/\b(SKC|CLR|NSC|CAVOK|FEW|SCT|BKN|OVC|VV)(\d{3})?/g)??[];
+    for(const s of skyMatch){
+      const cov=s.slice(0,3),base=s.length>3?parseInt(s.slice(3))*100:null;
+      const frac={'SKC':0,'CLR':0,'NSC':0,'CAV':0,'FEW':1,'SCT':3,'BKN':6,'OVC':8,'VV ':8}[cov]??0;
+      if(frac>cloudFraction){cloudFraction=frac;ceilFt=base;}
+    }
+  }
+  const cloudPct=Math.round(cloudFraction/8*100);
+  const wx=(raw.wxString??raw.wx_string??raw.presentWx??'').toLowerCase();
+  // estrai anche dal rawOb se wxString vuoto
+  const wxRaw=rawOb.toLowerCase();
+  const rainNow=wx.includes('ra')||wx.includes('dz')||wx.includes('sh')||
+    (!wx&&(wxRaw.includes(' ra ')||wxRaw.includes(' -ra ')||wxRaw.includes(' +ra ')||wxRaw.includes(' dz ')));
+  const tsNow=wx.includes('ts')||(!wx&&wxRaw.includes(' ts '));
+  const temp=raw.temp??raw.temp_c??null;
+  const dp2 =raw.dewp??raw.dewpoint_c??null;
+  const obsTime=raw.obsTime??raw.observation_time??raw.reportTime??null;
+  // obsTime reale è epoch UNIX in secondi (number). reportTime/observation_time
+  // possono invece essere stringhe ISO. Distinguiamo i due casi esplicitamente
+  // invece di passare tutto a new Date(), che tratta i number come millisecondi
+  // e produceva ageMin assurdi (anni anziché minuti).
+  const obsMs=obsTime==null?null:(typeof obsTime==='number'?obsTime*1000:new Date(obsTime).getTime());
+  const ageMin=obsMs!=null&&!isNaN(obsMs)?Math.round((Date.now()-obsMs)/60000):null;
+  return{ws:wsKmh,wg:wgKmh,wd,cloudPct,ceilFt,rainNow,tsNow,
+    visMi:raw.visib??null,temp,dp:dp2,ageMin,
+    raw:rawOb,station:raw.stationId??raw.icaoId??raw.station_id??''};
+}
+
+// Applica la gerarchia osservazione > NWP:
+// Restituisce un oggetto "override" da mescolare sull'ora corrente di hrs
+function metarOverride(parsed){
+  if(!parsed)return null;
+  const ov={};
+  if(parsed.cloudPct!=null) ov.cloud=parsed.cloudPct;
+  if(parsed.rainNow!=null)  ov.metarRain=parsed.rainNow;  // booleano osservativo
+  if(parsed.ws!=null)       ov.metarWs=parsed.ws;
+  if(parsed.wd!=null)       ov.metarWd=parsed.wd;
+  if(parsed.temp!=null)     ov.metarT=parsed.temp;
+  if(parsed.tsNow)          ov.metarTs=true;
+  ov._age=parsed.ageMin;
+  // FIX Belardo_v9.9beta1 (FIX-6): T/Dp/RH in SUPERFICIE (e ovunque legga
+  // now.t2m/now.dp/now.rh) restavano SEMPRE il valore NWP, anche quando un
+  // METAR reale e fresco era disponibile due riquadri sotto — in contrasto
+  // con la gerarchia "osservazione > previsione" che il pannello dichiara e
+  // applica già a nubi/pioggia. Caso reale 07/07/2026 11:35: briefing Dp
+  // 21.6°C (NWP) vs METAR osservato Dp 18.0°C, 3.6°C di scarto sullo stesso
+  // istante. Fix: se il METAR è fresco (≤180min, coerente con la soglia già
+  // mostrata dal badge), sovrascrive t2m/dp in place; RH viene ricalcolata
+  // con Magnus da T/Dp METAR così i tre valori restano mutuamente coerenti
+  // (evita di mescolare RH-NWP con T/Dp-METAR).
+  const freshEnough = parsed.ageMin==null || parsed.ageMin<=180;
+  if(freshEnough && parsed.temp!=null) ov.t2m=parsed.temp;
+  if(freshEnough && parsed.dp!=null)   ov.dp=parsed.dp;
+  if(freshEnough && parsed.temp!=null && parsed.dp!=null){
+    const es=t=>Math.exp((17.625*t)/(243.04+t));
+    ov.rh=Math.max(0,Math.min(100,Math.round(100*(es(parsed.dp)/es(parsed.temp)))));
+  }
+  return ov;
+}
+
+// ── helper fetch JSON ─────────────────────────────────────────────────────
+async function fj(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+
+async function fetchOM(){
+  const v=['cape','lifted_index','convective_inhibition','freezing_level_height','boundary_layer_height','temperature_2m','dew_point_2m','relative_humidity_2m','precipitation_probability','precipitation','cloud_cover','wind_speed_10m','wind_direction_10m','wind_gusts_10m','temperature_300hPa','temperature_250hPa','temperature_200hPa','temperature_150hPa','geopotential_height_300hPa','geopotential_height_250hPa','geopotential_height_200hPa','geopotential_height_150hPa','wind_speed_250hPa','wind_direction_250hPa','total_column_integrated_water_vapour','uv_index'].join(',');
+  return fj(`https://api.open-meteo.com/v1/forecast?latitude=${CV.lat}&longitude=${CV.lon}&hourly=${v}&forecast_days=3&timezone=Europe%2FRome&models=best_match`);
+}
+async function fetchMarine(){return fj(`https://marine-api.open-meteo.com/v1/marine?latitude=${CV.lat}&longitude=${CV.lon}&hourly=wave_height,wave_period,swell_wave_height,sea_surface_temperature&forecast_days=3&timezone=Europe%2FRome`);}
+async function fetchFlood(){
+  const offs=[[0,0],[0,.1],[-.1,0]];let best=null;
+  for(const[dl,dlo]of offs){
+    try{
+      const la=(VOLT.lat+dl).toFixed(2),lo=(VOLT.lon+dlo).toFixed(2);
+      const d=await fj(`https://flood-api.open-meteo.com/v1/flood?latitude=${la}&longitude=${lo}&daily=river_discharge,river_discharge_max,river_discharge_min,river_discharge_median&forecast_days=7&past_days=3&timezone=Europe%2FRome`);
+      const vs=d?.daily?.river_discharge?.filter(v=>v!=null)??[],mq=vs.length?Math.max(...vs):0;
+      if(mq>(best?.mq??0))best={d,mq};
+    }catch(_){}
+  }
+  return best?.d??null;
+}
+async function fetchAQ(){
+  const core='european_aqi,pm2_5,pm10,nitrogen_dioxide,ozone,dust';
+  const full=core+',grass_pollen,birch_pollen';
+  const base=`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${CV.lat}&longitude=${CV.lon}&forecast_days=2&timezone=Europe%2FRome&hourly=`;
+  const parse=(d)=>{
+    // Esporta array orario AQI per il pannello previsionale (v9.6)
+    const now=new Date();
+    d._hrs=(d.hourly?.european_aqi??[]).map((aqi,i)=>({
+      aqi,time:new Date(d.hourly.time?.[i]??0)
+    })).filter(h=>h.time>=now).slice(0,12);
+    return d;
+  };
+  try{const r=await fetch(base+full);if(r.ok){const d=await r.json();d._s='full';return parse(d);}}catch(_){}
+  try{const r=await fetch(base+core);if(r.ok){const d=await r.json();d._s='core';return parse(d);}}catch(_){}
+  return null;
+}
+async function fetchSentGroup(group){
+  const v='wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_850hPa,geopotential_height_500hPa,precipitation,precipitation_probability';
+  const res=[];
+  for(const s of group){
+    try{
+      const d=await fj(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=${v}&forecast_hours=6&timezone=Europe%2FRome&models=best_match`);
+      const h=d.hourly;
+      // Precipitazione media sulle prime 6h — segnale fronte produttivo/sterile
+      const sPrecArr=h.precipitation??[];const sProbArr=h.precipitation_probability??[];
+      const sPrec=sPrecArr.slice(0,6).reduce((a,v)=>a+(v??0),0); // mm totali 6h
+      const sProb=sProbArr.slice(0,6).length?Math.max(...sProbArr.slice(0,6).map(v=>v??0)):0;
+      res.push({...s,ws:h.wind_speed_10m?.[0]??null,wd:h.wind_direction_10m?.[0]??null,wg:h.wind_gusts_10m?.[0]??null,t850:h.temperature_850hPa?.[0]??null,z500:h.geopotential_height_500hPa?.[0]??null,sPrec,sProb,ok:true});
+    }catch(_){res.push({...s,ok:false});}
+  }
+  return res;
+}
+async function fetchFarSwell(){
+  const pts=[{id:'gi',lat:35.99,lon:-5.36},{id:'pa',lat:39.57,lon:2.65}];
+  const out={};
+  for(const p of pts){
+    try{
+      const d=await fj(`https://marine-api.open-meteo.com/v1/marine?latitude=${p.lat}&longitude=${p.lon}&hourly=wave_height,wave_period,swell_wave_height&forecast_days=3&timezone=Europe%2FRome`);
+      const h=d.hourly;
+      out[p.id]={hs:h.wave_height?.[0]??null,t:h.wave_period?.[0]??null,sw:h.swell_wave_height?.[0]??null};
+    }catch(_){out[p.id]={hs:null,t:null,sw:null};}
+  }
+  return out;
+}
+
+// ── FISICO ──
+// Media climatologica tropopausa Mediterraneo centrale (m), mesi 0-11
+const TROPO_SEASONAL=[10200,10500,11000,11400,11800,12100,12300,12100,11600,11000,10400,10100];
+
+// ── PATCH v8.10: DEROGA CAPE-ESTREMO CENTRALIZZATA ("LOADED GUN") ──────────
+// RAZIONALE: un'energia potenziale così alta (CAPE>2500 J/kg) con LI negativo
+// può superare il blocco della tropopausa alta, ma solo se la CIN non è
+// completamente sigillante (<400 J/kg — oltre questa soglia anche un'energia
+// enorme resta inaccessibile, il tappo vince).
+// STORIA DEL BUG: questa deroga esisteva SOLO dentro calcExt48H (PATCH v8.7.1),
+// usata per il calcolo "Precipitazione rovinosa" della card 48H Estremi.
+// Tre altri punti del codice applicavano lo STESSO veto tropopausa (z>=closed
+// → azzera tutto) SENZA questa deroga: la card "Convettiva 8h" (pC), il banner
+// di rischio principale (assessRisk) e la tabella oraria (hoursRows).
+// Risultato osservato 29/06/2026: stesso stato fisico (CAPE 2710, LI -2.4,
+// CIN 192) → 53% "Monitoraggio elevato" nella card 48H Estremi, ma 0% e
+// "BASSO" nel banner principale e nella card 8h che l'utente guarda per
+// primo. Un evento reale (pioggia + grandine) è stato quindi mascherato
+// dai pannelli più visibili. Centralizzando qui la funzione, ogni punto del
+// codice applica la stessa regola, con lo stesso esito.
+function isLoadedGun(h){
+  if(!h)return false;
+  return (h.cape??0)>2500 && (h.li??5)<0 && Math.abs(h.cin??999)<400;
+}
+
+// ── SOGLIE STAGIONALI + DIURNE ─────────────────────────────────────
+// v8.9.1 — architettura a doppia dimensione: stagione × fascia oraria.
+//
+// RAZIONALE FISICO:
+// L'atmosfera non ha le stesse proprietà a luglio alle 14 e a gennaio alle 03.
+// H₂O colonna, VIL e copertura nuvolosa hanno range strutturalmente diversi:
+//   - Estate: H₂O 25–42 kg/m², VIL può essere rumore anche a 0.14
+//   - Inverno: H₂O 10–24 kg/m², VIL 0.05 con fronte reale è già significativo
+// Il ciclo diurno aggiunge una seconda dimensione:
+//   - Notte: PBL collassato, convezione sopita → VIL residuo è quasi sempre rumore
+//   - Giorno: PBL aperto, riscaldamento solare → VIL 0.06 può essere segnale reale
+//
+// STAGIONI (mese 0-11):
+//   INVERNO  = nov–mar  (10,11,0,1,2)
+//   TRANSIZ. = apr–mag + ott  (3,4,9)
+//   ESTATE   = giu–set  (5,6,7,8)
+//
+// FASCE ORARIE:
+//   NOTTE      = 22–06  → soglie più alte (VIL residuo è rumore notturno)
+//   TRANSIZ.   = 06–10 e 18–22  → soglie intermedie
+//   GIORNO     = 10–18  → soglie più basse (segnali fisici affidabili)
+//
+// CAP frontInProgress: mai oltre 30% senza conferma sentinelle (+5% con sentinelle).
+// Tutte le soglie H₂O e VIL sono nelle stesse unità di calcPD.
+
+// Matrice soglie frontali [stagione][fascia]: {h2Alta, frontH2O, vilMin, cloudMin, cap}
+// stagione: 0=inverno, 1=transizione, 2=estate
+// fascia:   0=notte, 1=transizione, 2=giorno
+const FRONT_THR=[
+  // INVERNO (nov–mar) — aria più secca, VIL strutturalmente basso
+  [{h2Alta:17,frontH2O:21,vilMin:0.05,cloudMin:68,cap:28},  // notte
+   {h2Alta:16,frontH2O:20,vilMin:0.04,cloudMin:65,cap:28},  // transizione
+   {h2Alta:15,frontH2O:19,vilMin:0.03,cloudMin:62,cap:30}], // giorno
+  // TRANSIZIONE (apr–mag, ott)
+  [{h2Alta:22,frontH2O:26,vilMin:0.07,cloudMin:72,cap:27},  // notte
+   {h2Alta:20,frontH2O:24,vilMin:0.06,cloudMin:70,cap:27},  // transizione
+   {h2Alta:18,frontH2O:22,vilMin:0.05,cloudMin:65,cap:30}], // giorno
+  // ESTATE (giu–set) — aria molto umida, VIL residuo frequente
+  [{h2Alta:28,frontH2O:32,vilMin:0.12,cloudMin:78,cap:25},  // notte
+   {h2Alta:26,frontH2O:30,vilMin:0.10,cloudMin:75,cap:25},  // transizione
+   {h2Alta:24,frontH2O:28,vilMin:0.08,cloudMin:70,cap:28}]  // giorno
+];
+function getSeasonIdx(m){return(m>=5&&m<=8)?2:(m===3||m===4||m===9)?1:0;}
+function getDiurnalIdx(h){return(h>=10&&h<18)?2:((h>=6&&h<10)||(h>=18&&h<22))?1:0;}
+function getDiurnalLabel(i){return['NOTTE (22–06)','TRANSIZ. (06–10/18–22)','GIORNO (10–18)'][i];}
+function getSeasonLabel(i){return['INVERNO (nov–mar)','TRANSIZ. (apr–mag/ott)','ESTATE (giu–set)'][i];}
+
+function getSeasonalThresholds(nowDate){
+  const d=nowDate??new Date();
+  const m=d.getMonth(),h=d.getHours();
+  const mean=TROPO_SEASONAL[m];
+  const closed=mean,intermHi=mean-600,intermLo=mean-1200,open=mean-2200;
+  const favTropo=mean-300,convClosed=mean,pdClosed=mean;
+  const cloudFrontBonus=m>=4&&m<=9?85:75;
+  const sIdx=getSeasonIdx(m),dIdx=getDiurnalIdx(h);
+  const ft=FRONT_THR[sIdx][dIdx];
+  return{
+    closed,intermHi,intermLo,open,favTropo,convClosed,pdClosed,cloudFrontBonus,mean,month:m,
+    h2Alta:ft.h2Alta, frontH2O:ft.frontH2O, vilMin:ft.vilMin,
+    cloudFront:ft.cloudMin, frontCap:ft.cap,
+    seasonIdx:sIdx,diurnalIdx:dIdx,
+    seasonLabel:getSeasonLabel(sIdx),diurnalLabel:getDiurnalLabel(dIdx),
+    hour:h
+  };
+}
+// Singleton: calcolato una volta al render (reset ad ogni loadAll)
+let ST=null;
+function getST(){if(!ST)ST=getSeasonalThresholds();return ST;}
+
+function calcTropo(i,h){
+  const month=new Date().getMonth();
+  const seasonalMean=TROPO_SEASONAL[month];
+  const ls=[{hPa:300,t:h.temperature_300hPa?.[i],z:h.geopotential_height_300hPa?.[i]},{hPa:250,t:h.temperature_250hPa?.[i],z:h.geopotential_height_250hPa?.[i]},{hPa:200,t:h.temperature_200hPa?.[i],z:h.geopotential_height_200hPa?.[i]},{hPa:150,t:h.temperature_150hPa?.[i],z:h.geopotential_height_150hPa?.[i]}].filter(l=>l.t!=null&&l.z!=null);
+  if(ls.length<2)return null;
+  // Rilevamento tropopausa: primo livello con lapse rate < 2 K/km
+  let tropoZ=null,tropohPa=null;
+  for(let k=0;k<ls.length-1;k++){const dz=ls[k+1].z-ls[k].z,dt=ls[k].t-ls[k+1].t;if(dz>0&&Math.abs(dt/(dz/1000))<2){tropoZ=Math.round(ls[k].z);tropohPa=ls[k].hPa;break;}}
+  if(tropoZ===null){const top=ls[ls.length-1];tropoZ=Math.round(top.z);tropohPa=top.hPa;}
+  // Valvola stagionale — soglie calibrate sul mese corrente
+  const _st=getST();
+  const valve=tropoZ>=_st.closed?'CHIUSA':tropoZ>=_st.intermLo?'INTERMEDIA':'APERTA';
+  const baseColor=tropoZ>=_st.closed?'#22c55e':tropoZ>=_st.intermLo?'#eab308':'#ef4444';
+  // Scostamento dalla media stagionale
+  const deviation=tropoZ-seasonalMean;
+  // Gradiente termico verticale 250→200 hPa (K/km)
+  // In troposfera normale: 5–8 K/km. Vicino tropopausa o in stratosfera: < 2 K/km.
+  // In intrusione stratosferica: < 1 K/km (quasi-isoterma o inversione)
+  const t250=h.temperature_250hPa?.[i],t200=h.temperature_200hPa?.[i];
+  const z250=h.geopotential_height_250hPa?.[i],z200=h.geopotential_height_200hPa?.[i];
+  let vertGrad=null;
+  if(t250!=null&&t200!=null&&z250!=null&&z200!=null&&z200>z250){
+    vertGrad=parseFloat(((t250-t200)/((z200-z250)/1000)).toFixed(2));
+  }
+  // Intrusione stratosferica: tropo molto bassa + strato isotermo/invertito sopra
+  // FISICAMENTE: aria stratosferica (fredda, secca, alta PV) in discesa nella troposfera
+  // Pericolosa dinamicamente anche con CAPE basso — forzante meccanica intensa
+  const isStratIntrusion=tropoZ<9500&&(vertGrad!=null&&vertGrad<1.0);
+  // Fattore di modulazione convettiva:
+  // 1.0 = neutro, <1 = smorzamento, >1 = amplificazione
+  // Basato su scostamento stagionale (asimmetrico: smorzamento > amplificazione)
+  let convFactor,stratNote=null;
+  if(isStratIntrusion){
+    convFactor=0.45; // La soppressione sotto l'intrusione è forte (aria secca/stabile)
+    stratNote='⚠ INTRUSIONE STRATOSFERICA — PV elevata · Forzante dinamica intensa · CAPE soppresso localmente';
+  }else{
+    // Smorzamento: ogni 1000m sotto la media stagionale → -0.12 (più sensibile)
+    // Amplificazione: ogni 1000m sopra la media → +0.05 (più conservativa)
+    convFactor=1.0+(deviation>0?(deviation/20000):(deviation/8000));
+    convFactor=parseFloat(Math.max(0.2,Math.min(1.4,convFactor)).toFixed(3));
+  }
+  return{hPa:tropohPa,z:tropoZ,valve:isStratIntrusion?'INTRUSIONE':valve,color:isStratIntrusion?'#9333ea':baseColor,convFactor,isStratIntrusion,stratNote,deviation:Math.round(deviation),seasonalMean,vertGrad};
+}
+function calcVIL(c,w){if(!c||c<=0)return 0;return parseFloat((3.44e-6*Math.pow(c,4/3)*Math.min(1.5,(w||30)/30)).toFixed(2));}
+// PATCH v8.11: FIX CRITICO — extractHours(om,15) tagliava i dati a 15 ore,
+// ma calcExt48H() (riga ~917) tratta l'intero array ricevuto come "n48" e
+// lo usa per calcolare le probabilità di eventi estremi a 48h (precipitazione
+// rovinosa, vento di burrasca, alluvione, caldo/freddo critico). Il risultato:
+// la Scheda "Predizione eventi estremi 48h" stava in realtà guardando solo
+// le prossime 15 ore, non 48 — un errore di finestra del 69%, non visibile
+// nell'interfaccia perché nessun indicatore mostrava l'orizzonte realmente
+// coperto. L'API viene già interrogata con forecast_days=2 (com.fetchOM,
+// riga 392), quindi i dati per le 48h pieni erano già disponibili lato
+// server: il problema era SOLO nell'estrazione lato client. Bump a 49
+// (ora corrente + 48h piene) risolve senza richiedere nulla in più al server.
+// La Scheda 1 (Previsione 8-12h) non era invece danneggiata: calcPD() e la
+// tabella oraria si autolimitano già internamente con hrs.slice(0,9).
+function extractHours(om,n=49){
+  if(!om?.hourly?.time)return[];
+  const now=new Date(),h=om.hourly;
+  return h.time.map((t,i)=>({t:new Date(t),i})).filter(({t})=>t>=now).slice(0,n).map(({t,i})=>{
+    const cape=h.cape?.[i]??0,wv=h.total_column_integrated_water_vapour?.[i]??0;
+    return{time:t,label:t.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),
+      cape,wv,li:h.lifted_index?.[i]??0,cin:h.convective_inhibition?.[i]??0,vil:calcVIL(cape,wv),
+      tropo:calcTropo(i,h),freezing:h.freezing_level_height?.[i]??0,blh:h.boundary_layer_height?.[i]??0,
+      t2m:h.temperature_2m?.[i]??0,dp:h.dew_point_2m?.[i]??0,rh:h.relative_humidity_2m?.[i]??0,
+      precProb:h.precipitation_probability?.[i]??0,prec:h.precipitation?.[i]??0,
+      cloud:h.cloud_cover?.[i]??0,ws:h.wind_speed_10m?.[i]??0,wd:h.wind_direction_10m?.[i]??0,
+      gusts:h.wind_gusts_10m?.[i]??0,ws250:h.wind_speed_250hPa?.[i]??0,wd250:h.wind_direction_250hPa?.[i]??0,
+      t300:h.temperature_300hPa?.[i]??0,t250:h.temperature_250hPa?.[i]??0,t200:h.temperature_200hPa?.[i]??0,
+      z300:h.geopotential_height_300hPa?.[i]??0,z250:h.geopotential_height_250hPa?.[i]??0,
+      z200:h.geopotential_height_200hPa?.[i]??0,uv:h.uv_index?.[i]??null};
+  });
+}
+
+// ── FINESTRA 8H — fonte unica ──────────────────────────────────────
+// PATCH v8.14: estratta da calcPD/makeBf/renderAll, che calcolavano
+// indipendentemente lo stesso n8=hrs.slice(0,9) con la stessa formula
+// max/min — duplicazione che oggi è allineata per coincidenza ma è
+// esattamente la stessa classe di bug già vista altrove nel codice
+// (FIX v8.4 BUG-2, v8.11): se uno dei tre punti viene modificato senza
+// toccare gli altri, "MAX PROSSIME 8H" nel briefing, la card Convettiva
+// e calcWx divergerebbero silenziosamente. Centralizzata qui.
+// ── CONVENZIONE TEMPORALE (Belardo_v9.9beta1, round 3) ──────────────────────
+// NOW = stato osservato/orario corrente (hrs[0], con override METAR
+//       già applicato — vedi metarOverride). Risponde a "cosa succede ORA".
+// F8  = aggregato max/min sulle prossime 8h (questa funzione). Risponde a
+//       "cosa rischia di succedere entro N ore". Prefisso f8_ obbligatorio.
+// REGOLA: nessuna label con connotazione di presente (COPERTO, IN ATTO,
+// IN CORSO, SERENO...) può leggere una variabile f8_* per il proprio
+// stato principale. Le variabili f8_* alimentano SOLO punteggi di
+// probabilità (pC, pF) o sottotitoli di previsione con orizzonte esplicito.
+// Bug reale che ha originato questa regola: il 07/07/2026 il pannello
+// mostrava "CIELO COPERTO" a cielo sereno (METAR LIRM: SKC/CLR, Nubi
+// modello 0%) perché la label leggeva f8_cloudMax (max previsto 8h)
+// invece di now.cloud (osservato/corrente).
+function get8hWindow(hrs){
+  const n8=hrs.slice(0,9);
+  return{
+    n8,
+    f8_capeMax:Math.max(...n8.map(h=>h.cape)),
+    f8_liMin:Math.min(...n8.map(h=>h.li)),
+    f8_precMax:Math.max(...n8.map(h=>h.precProb)),
+    f8_cloudMax:Math.max(...n8.map(h=>h.cloud)),
+    f8_vilMax:Math.max(...n8.map(h=>h.vil))
+  };
+}
+
+// ── PRECIPITAZIONE DUALE ──
+function calcPD(hrs,sst,nearSents){
+  if(!hrs.length)return{conv:0,front:0,cc:'#22c55e',fc:'#22c55e',maxVil:0};
+  const now=hrs[0],tropoZ=now.tropo?.z??13000,tropoKm=tropoZ/1000;
+  const{n8,f8_capeMax,f8_liMin,f8_precMax,f8_cloudMax,f8_vilMax}=get8hWindow(hrs);
+  // NOW — nuvolosità osservata/corrente (METAR-override già applicato a hrs[0]
+  // da metarOverride, vedi loadAll). Usata SOLO dove la semantica è "adesso"
+  // (frontInProgress), MAI per punteggi di probabilità 8h (quelli restano f8_*).
+  const nowCloud=now.cloud??0;
+  const mxSwell=Math.max(...n8.map(h=>0));
+
+  // CONVETTIVA — soglie stagionali
+  const st=getST();
+  const tropoM=tropoKm*1000; // in metri per confronto con st
+  let pC=0;
+  if(tropoM<st.intermLo){  // sotto soglia "aperta" stagionale
+    if(tropoKm<9)pC+=30;else if(tropoKm<10)pC+=15;else pC+=5;
+    if(f8_capeMax>1000)pC+=30;else if(f8_capeMax>300)pC+=20;else if(f8_capeMax>50)pC+=10;
+    if(f8_liMin<-5)pC+=25;else if(f8_liMin<-2)pC+=15;else if(f8_liMin<0)pC+=8;
+    const ci=Math.abs(now.cin);
+    if((now.cape>50||now.li<0)&&ci<50)pC+=15;
+    if(now.ws250>=60)pC+=10;if(sst>SST_TH)pC+=5;
+  }
+  // FIX Belardo_v9.9beta1 (round 5) — BUCO ZONA INTERMEDIA: prima questo bracket
+  // (intermLo <= tropoM < closed) non esisteva. pC restava a 0 di default,
+  // senza passare né dal punteggio "aperta" sopra né dal veto/deroga
+  // "chiusa" sotto — stesso identico CAPE/LI/CIN dava 0% qui e ROSSO/ELEVATO
+  // nel Secondo Avviso e nel banner rischio principale dello stesso pannello
+  // (osservato 08/07/2026, tropo 12258m). Il fix NON equipara la zona
+  // intermedia a quella aperta: qui la valvola sta solo aprendosi, non è
+  // spalancata, quindi i pesi restano dimezzati E vincolati a un vero
+  // segnale di innesco meccanico (jet forte, wind-shear direzionale, o VIL
+  // già sopra la soglia stagionale reale — non il proxy CAPE/LI da solo).
+  // RAZIONALE ECONOMICO: qui l'area è costiera-turistica — un falso
+  // positivo (pioggia annunciata, poi assente) costa più di un falso
+  // negativo. Senza trigger osservabile, CAPE/LI alti restano "energia in
+  // canna senza grilletto premuto" (stesso concetto del punteggio Trigger
+  // in assessSecondo) e ricevono solo un floor minimo, mai un'impennata.
+  else if(tropoM<st.closed){
+    const hasTrigger=now.ws250>=60||(now.wd250>=150&&now.wd250<=250)||f8_vilMax>=st.vilMin;
+    if(hasTrigger){
+      if(f8_capeMax>1000)pC+=15;else if(f8_capeMax>300)pC+=10;else if(f8_capeMax>50)pC+=5;
+      if(f8_liMin<-5)pC+=12;else if(f8_liMin<-2)pC+=8;else if(f8_liMin<0)pC+=4;
+      const ci=Math.abs(now.cin);
+      if((now.cape>50||now.li<0)&&ci<50)pC+=8;
+    }else if(f8_capeMax>1000){
+      pC=Math.max(pC,5); // energia presente ma nessun innesco osservabile: non muto, ma tetto basso
+    }
+  }
+  // PATCH v8.10: deroga loaded-gun applicata PRIMA del veto secco.
+  // Prima v8.9.1 azzerava pC a prescindere (anche con CAPE 2500+/LI negativo/
+  // CIN<400 — la stessa energia che calcExt48H riconosceva già al 53% nella
+  // card 48H Estremi). Ora il veto resta in vigore SOLO se la deroga non è
+  // attiva; se attiva, pC riceve 40 come base (smorzato subito sotto dal
+  // convFactor stagionale, riga "pC=Math.round(pC*convFactor)"), invece di 0.
+  const loadedGunNow=isLoadedGun(now);
+  if(tropoM>=st.closed){
+    pC = loadedGunNow ? Math.max(pC,40) : 0;
+  }
+  // FIX v8.5 BUG-5: Look-ahead convettivo 4h
+  // Se la valvola è chiusa ORA ma nelle prossime 4h la tropo scende sotto 12.5km
+  // con CAPE>300 e CIN<150, segnala pre-allerta (non azzera la card).
+  let futureConv=false;
+  for(let fi=1;fi<=4&&fi<hrs.length;fi++){
+    const fh=hrs[fi],ftk=(fh.tropo?.z??13000)/1000;
+    if(ftk<=12.5&&fh.cape>300&&Math.abs(fh.cin??999)<150){futureConv=true;break;}
+  }
+  if(tropoM>=st.closed&&futureConv&&!loadedGunNow) pC=Math.max(pC,25);
+  // v8.10: il cap "VIL=0 → max 25%" non deve abbattere la deroga loaded-gun.
+  // Il proxy VIL è notoriamente sottostimato dalla risoluzione ~10km del
+  // modello su updraft localizzati (è il motivo per cui un VIL=0.16 ha
+  // accompagnato CAPE/LI da temporale con grandine il 29/06/2026) — non ha
+  // senso lasciare che un proxy debole abbatta un segnale CAPE/LI già forte.
+  if(f8_vilMax===0&&!loadedGunNow)pC=Math.min(pC,25);
+  // Soppressione da LI fortemente positivo (colonna blindata)
+  // LI > +5K → stabilità granitica, la convettiva non può superare soglie minime
+  if(f8_liMin>5)pC=Math.min(pC,8);
+  else if(f8_liMin>3)pC=Math.min(pC,16);
+  else if(f8_liMin>1)pC=Math.min(pC,28);
+  // Applicazione fattore di smorzamento/amplificazione tropopausa stagionale
+  const convFactor=now.tropo?.convFactor??1.0;
+  pC=Math.round(pC*convFactor);
+  // Veto strato limite (notturno o mattutino): BL sigillata — energia non accessibile
+  const cinNow=Math.abs(now.cin??0),blhNow=now.blh??1000;
+  if(cinNow>60&&blhNow<200&&now.cape<50)pC=Math.min(pC,5);    // BL completamente sigillata
+  else if(cinNow>40&&blhNow<300&&now.cape<100)pC=Math.min(pC,12); // strato limite inibito
+  pC=Math.min(95,Math.round(pC));
+
+  // FRONTALE — percorso modello + override fisico + swell primario
+  let pF=0;
+  // A: segnale modello
+  if(f8_precMax>=20&&f8_cloudMax>=40){
+    if(f8_precMax>50)pF=Math.max(pF,f8_precMax-pC*0.5);
+    else if(f8_precMax>25)pF=Math.max(pF,f8_precMax*0.6);
+    if(f8_cloudMax>80&&tropoM>st.intermLo)pF+=10;
+    if(tropoM>=st.intermHi&&f8_precMax>=30)pF=Math.max(pF,f8_precMax*0.8);
+  }
+  // B: override fisico — modello può essere in ritardo sul fronte
+  // v8.9.1: soglie h2Alta, frontH2O, vilMin, cloudFront e cap lette dalla matrice
+  // stagionale+diurna (getSeasonalThresholds). In estate di notte le soglie sono
+  // più alte (VIL residuo è rumore); in inverno di giorno sono più basse
+  // (fronti reali con poca H₂O vanno comunque rilevati).
+  const h2Alta=now.wv!=null&&now.wv>st.h2Alta;
+  const swellObs=STATE.marHrs?.length?Math.max(...STATE.marHrs.map(m=>m.sH)):(STATE.swell??0);
+  // FIX v8.5 PATH-B: H2O alta + copertura nuvolosa è firma di aria umida pre-frontale,
+  // ma NON può generare pF se il modello dice 0% E le sentinelle sono ferme.
+  // Il Path B si attiva solo se almeno una fonte esterna conferma il movimento del fronte:
+  // f8_precMax>0 (modello vede qualcosa) OPPURE sentinelle tirreniche con vento >= 15 km/h.
+  const sentTirWind = nearSents?.filter(s=>s.grp==='w'&&s.ok)
+    .some(s=>(s.wg??s.ws??0)>=15) ?? false;
+  // FIX v8.5.1: f8_precMax>0 non è sufficiente per abilitare Path B.
+  // Un 3% isolato è rumore NWP, non un segnale frontale credibile.
+  // Soglia minima: f8_precMax>=10% (modello vede qualcosa di fisicamente coerente)
+  // oppure sentinelle tirreniche attive (segnale cinematico diretto).
+  const pathBActive = f8_precMax >= 10 || sentTirWind;
+  if(h2Alta && f8_cloudMax>=st.cloudFrontBonus && pathBActive){
+    let pFis=0;
+    // v8.9.1: bracket basati su soglie dinamiche (frontH2O dalla matrice stagione×ora)
+    // In inverno di giorno frontH2O=19 → wv>22 genera già pFis=28; in estate di notte
+    // frontH2O=32 → servono 36+ kg/m² per il bracket massimo.
+    if(now.wv>st.frontH2O+4)pFis=40;
+    else if(now.wv>st.frontH2O)pFis=28;
+    else pFis=15;
+    if(swellObs>0.8)pFis+=20;else if(swellObs>0.4)pFis+=12;else if(swellObs>0.25)pFis+=7;
+    if(f8_precMax>0)pFis+=f8_precMax*0.5;
+    pF=Math.max(pF,pFis);
+  }
+  // C: swell primario — segnale fisico più affidabile
+  if(swellObs>0.8){pF=Math.max(pF,20+(swellObs>1.0?20:swellObs>0.8?10:0)+(f8_cloudMax>50?10:0));}
+  // D: sentinelle prossime W (Ponza, C.Miseno, Fiumicino — anello tirrenico)
+  // Fix v8.1: usa raffiche (come sentFlagInfo) e finestra ONO/O/OSO per Fiumicino.
+  // ── FRONTE STERILE DETECTOR (v8.8) ──────────────────────────────────────────
+  // Un fronte può avanzare con vento sostenuto ma senza produrre precipitazioni.
+  // Rilevamento: sentinelle tirreniche attive (vento SW≥15km/h) con
+  // sPrec < 0.2mm E sProb < 20% nelle prossime 6h → fronte sterile.
+  // Effetto: smorzamento pF proporzionale (non annullamento totale).
+  const activeTirSents=nearSents?.filter(s=>s.grp==='w'&&s.ok&&(s.wg??s.ws??0)>=15
+    &&((s.wd??0)>=180&&(s.wd??0)<=310))??[];
+  const sterileCount=activeTirSents.filter(s=>(s.sPrec??0)<0.2&&(s.sProb??100)<20).length;
+  const isFronteSterile=activeTirSents.length>=2&&sterileCount===activeTirSents.length;
+  const fronteSterileF=activeTirSents.length===0?1.0
+    :isFronteSterile?0.25
+    :(1.0-(sterileCount/activeTirSents.length)*0.5);
+  if(nearSents){
+    const wS=nearSents.filter(s=>s.grp==='w'&&s.ok);
+    for(const s of wS){
+      const wd=s.wd??0;
+      const ws=s.wg??s.ws??0; // raffiche — coerente con sentFlagInfo
+      const isSW=(wd>=180&&wd<=270);
+      const isW=(wd>=240&&wd<=310); // finestra allargata ONO/O/OSO
+      if(s.id==='fi'&&isW&&ws>=15)pF+=20; // Fiumicino: incluso ONO 283°
+      if(s.id==='pz'&&isSW&&ws>=15)pF+=15; // Ponza: SW classico
+      if(s.id==='cm'&&isSW&&ws>=15)pF+=18; // C.Miseno: SW ingresso Golfo Napoli
+    }
+  }
+  if(now.wv>20&&tropoM>st.intermLo&&f8_cloudMax>60)pF+=8;
+  // Applica smorzamento fronte sterile a tutto pF accumulato (Path A + B + swell + sentinelle)
+  // Il detector è già dichiarato sopra — ordine corretto
+  if(fronteSterileF<1.0) pF=Math.round(pF*fronteSterileF);
+  // v8.9.1: GATE DUALE — pre-evento vs fronte in corso
+  //
+  // DETECTOR FRONTE IN CORSO: soglie lette dalla matrice stagione×ora.
+  // Estate/notte: H₂O>32, VIL>0.12, cloud>78 (soglie alte — rumore frequente)
+  // Inverno/giorno: H₂O>19, VIL>0.03, cloud>62 (soglie basse — fronti reali con poco vapore)
+  // Condizione D: isFronteSterile=false (fronte sterile confermato → non può essere in corso)
+  //
+  // CAP: st.frontCap (dalla matrice, 25–30%) + bonus +5% se sentinelle confermano.
+  // Regola di sicurezza: pF non supera mai 30% senza conferma sentinelle,
+  // 35% come massimo assoluto anche con sentinelle in qualsiasi stagione/ora.
+  // FIX Belardo_v9.9beta1 (round 3): frontInProgress dichiara "in corso" (presente),
+  // quindi ogni condizione fisica deve essere NOW. Prima usava mxCloud
+  // (F8, max prossime 8h) per il criterio nuvolosità mentre wv/vil/capeNet
+  // erano già NOW — stessa classe di bug del banner "CIELO COPERTO"
+  // (07/07/2026): un massimo previsto spacciato per stato presente.
+  // f8_precMax<10 resta F8 di proposito: qui il confronto è "il modello
+  // (F8) non vede ancora pioggia" vs "l'osservazione fisica (NOW) sì" —
+  // è il cuore del detector (nowcast in anticipo sul modello), non un bug.
+  const capeNetNow=(now.cape??0)-Math.abs(now.cin??0);
+  const frontInProgress=f8_precMax<10
+    &&(now.wv??0)>st.frontH2O
+    &&(now.vil??0)>st.vilMin
+    &&capeNetNow>0
+    &&nowCloud>st.cloudFront
+    &&!isFronteSterile;
+
+  // Path B REATTIVAZIONE con soglie dinamiche
+  if(frontInProgress&&h2Alta&&nowCloud>=st.cloudFront){
+    let pFis=0;
+    if(now.wv>st.frontH2O+6)pFis=30;
+    else if(now.wv>st.frontH2O+2)pFis=22;
+    else pFis=15;
+    if(swellObs>0.4)pFis+=6;
+    pF=Math.max(pF,pFis);
+  }
+
+  const sentOnlySignal=f8_precMax<10&&(pF>0||sentTirWind)&&!frontInProgress;
+  // CAP variabile: base dalla matrice, +5% con sentinelle tirreniche attive
+  // Massimo assoluto: 35% (anche con sentinelle in qualsiasi stagione/ora)
+  const sentBonus=sentTirWind?5:0;
+  const capFront=Math.min(35,st.frontCap+sentBonus);
+  const capPreevento=Math.min(20,Math.round(st.frontCap*0.55)+sentBonus);
+  // FIX Belardo_v9.9beta1 (FIX-1): prima il cap scattava solo se frontInProgress
+  // (impossibile con f8_precMax>=10) oppure f8_precMax<10 — lasciando la fascia
+  // intermedia (f8_precMax 10-49, es. 13% del 07/07/2026) completamente scoperta
+  // e pF libero fino a 90 anche con METAR/radar/sentinelle tutti a conferma
+  // di cielo asciutto. L'else finale chiude il buco: fuori da frontInProgress
+  // e dalla fascia "quiete" (f8_precMax<10), si applica comunque capFront (35%),
+  // mai un valore libero.
+  if(frontInProgress){
+    pF=Math.min(pF,capFront);
+  }else if(f8_precMax<10){
+    pF=Math.min(pF,capPreevento);
+  }else{
+    pF=Math.min(pF,capFront);
+  }
+  pF=Math.min(90,Math.round(pF));
+  const cc=pC>=60?'#ef4444':pC>=35?'#f97316':pC>=15?'#eab308':'#22c55e';
+  const fc=pF>=60?'#ef4444':pF>=35?'#f97316':pF>=15?'#60a5fa':'#22c55e';
+  return{conv:pC,front:pF,cc,fc,maxVil:f8_vilMax,sentOnlySignal,frontInProgress,futureConv,isFronteSterile,fronteSterileF,loadedGunNow};
+}
+
+// ── CONDIZIONE METEO ──
+// FIX Belardo_v9.9beta1 (round 3) — root fix del bug "CIELO COPERTO" osservato il
+// 07/07/2026 (cielo sereno sul campo, METAR LIRM SKC/CLR, Nubi modello 0%,
+// eppure label = CIELO COPERTO). Causa: la label leggeva mxC, il massimo
+// di nuvolosità PREVISTO nelle prossime 8h (f8_cloudMax), spacciandolo per
+// "cielo reale" (vedi commento v9.1 qui sotto, che dichiarava esplicitamente
+// questa intenzione errata). Da qui la regola del pannello:
+//   nowCloud     → guida SEMPRE icona/label/colore (stato presente)
+//   f8_cloudMax  → alimenta SOLO annotazioni di previsione nel sottotitolo,
+//                  mai lo stato principale, e sempre con orizzonte esplicito
+//                  ("entro 8h"), per non essere confuso col presente.
+function calcWx(pd,f8,now){
+  const nowCloud=now?.cloud??0;
+  const f8CloudMax=f8?.f8_cloudMax??0;
+  // Nota di previsione: si attiva SOLO quando F8 diverge in modo significativo
+  // da NOW, e dichiara sempre l'orizzonte — mai un'affermazione di presente.
+  // NB: f8_cloudMax è un massimo su n8=hrs.slice(0,9), che INCLUDE l'ora
+  // corrente (coerente con "MAX PROSSIME 8H" nel briefing) — quindi
+  // f8CloudMax >= nowCloud sempre. Questo permette di segnalare correttamente
+  // un AUMENTO futuro (max trainato da un'ora successiva più nuvolosa), ma
+  // NON una schiarita: se nowCloud è già alto, il massimo non potrà mai
+  // scendere sotto nowCloud per costruzione. Rilevare una schiarita in modo
+  // corretto richiederebbe un f8_cloudMin calcolato SOLO sulle ore future
+  // (n8.slice(1)), che get8hWindow oggi non espone — non aggiunto qui per
+  // non allargare la portata di questo fix; segnalato per revisione futura.
+  const cloudOutlookNote=
+    (f8CloudMax>75&&nowCloud<=75)?' · nuvolosità in aumento entro 8h (previsione)':'';
+  // PATCH v8.14: pd.conv>=40 può arrivare da due strade fisicamente opposte:
+  // (a) tropo realmente aperta con CAPE/LI da temporale, oppure (b) deroga
+  // loaded-gun che forza un minimo di 40 con tropo ANCORA chiusa (calcPD,
+  // riga 'pC = loadedGunNow ? Math.max(pC,40) : 0'). Prima di questa patch
+  // calcWx non riceveva né loadedGunNow né lo stato della tropopausa, quindi
+  // il messaggio diceva sempre "tropo aperta" — falso nel caso (b), dove la
+  // valvola è chiusa e l'energia sta bypassando il blocco, non attraversandolo.
+  const tropoClosedNow=(now?.tropo?.z??0)>=getST().closed;
+  if(pd.conv>=40){
+    if(pd.loadedGunNow&&tropoClosedNow){
+      return{icon:'⛈',label:'TEMPORALE POSSIBILE',color:'#ef4444',sub:'⚡ Energia estrema in deroga — tropo CHIUSA ma bypassata (CAPE/LI estremi, CIN non sigillante)'};
+    }
+    return{icon:'⛈',label:'TEMPORALE POSSIBILE',color:'#ef4444',sub:'Rischio convettivo reale — CAPE elevato, tropo aperta'};
+  }
+  // futureConv: tropo chiusa ora (cielo sereno) ma tappo CIN in indebolimento nelle prossime 4h.
+  // L'icona e la label riflettono la condizione ATTUALE (sereno), non il rischio latente.
+  // Il rischio è comunicato nel sottotitolo — senza fulmine, che il pubblico associa al temporale in atto.
+  // PATCH v9.1 — FIX BUG calcWx futureConv: la label 'SERENO' era fissa
+  // a prescindere dalla copertura nuvolosa. Con cloud=100% diceva 'SERENO'
+  // (contraddicendo il dato Nubi:100% che il pannello stesso aveva calcolato).
+  // Caso reale: 02/07/2026 08:10, cielo grigio uniforme, label = 'SERENO'.
+  // PATCH v9.9beta1 (round 3) — FIX ulteriore: qui "mxC" era in realtà f8_cloudMax
+  // (massimo previsto 8h), non lo stato reale — la stessa causa del bug
+  // "CIELO COPERTO" del 07/07/2026. Ora la label usa nowCloud (stato
+  // osservato/corrente); il rischio del tappo CIN resta comunicato nel
+  // sottotitolo, dove è già correttamente scoping "previsione 4-8h".
+  if(pd.conv>=20&&pd.futureConv){
+    const wxIcon=nowCloud>75?'☁':nowCloud>40?'🌤':'☀';
+    const wxLabel=nowCloud>75?'CIELO COPERTO':nowCloud>40?'PARZIALMENTE NUVOLOSO':'SERENO';
+    const wxColor=nowCloud>75?'#94a3b8':nowCloud>40?'#d8eaf8':'#f97316';
+    return{icon:wxIcon,label:wxLabel,color:wxColor,sub:'⚠ Tappo attivo — rischio convettivo in finestra 4–8h · aggiorna ogni 6 ore'};
+  }
+  if(pd.conv>=20)return{icon:'🌩',label:'INSTABILITÀ IN AUMENTO',color:'#f97316',sub:'Rischio temporale in crescita — previsione 8h · aggiorna ogni 6 ore'};
+  // v8.9: soglia banner PIOGGIA IN ATTO alzata da 15% a 20%.
+  // frontInProgress ora richiede VIL>0.10, H₂O>32, nowCloud>75 (stato presente,
+  // non più f8_cloudMax — v9.9beta1 round 3) e fronte non sterile.
+  // Con il detector più selettivo, anche il trigger del banner deve essere più esigente
+  // per evitare falsi positivi quando il modello è a 0% e il campo è asciutto.
+  // v9.9beta: gate radar reale — bug documentato sul campo (5-6 luglio 2026,
+  // osservazione diretta): questi tre rami dichiaravano pioggia basandosi
+  // SOLO su proxy fisici (VIL, H2O, nuvolosità), senza alcuna conferma
+  // osservativa. Se DPC/RainViewer confermano cielo asciutto sulle
+  // coordinate, sopprimiamo il banner indipendentemente dal punteggio proxy
+  // — stessa gerarchia "osservazione > previsione" già in uso per METAR.
+  // Se il radar non è disponibile (radarConfirmedDry=false E
+  // radarConfirmedWet=false), il comportamento resta quello di sempre:
+  // nessun blocco, nessuna nuova dipendenza rigida.
+  const radarVetoPioggia = pd.radarConfirmedDry===true;
+  if(pd.frontInProgress&&pd.front>=20&&!pd.isFronteSterile&&!radarVetoPioggia)return{icon:'🌧',label:'PIOGGIA IN ATTO',color:'#60a5fa',sub:'Fronte attivo — pioggia leggera rilevata da segnali fisici · modello NWP in ritardo'};
+  if(pd.front>=50&&!pd.sentOnlySignal&&!radarVetoPioggia)return{icon:'🌧',label:'PIOGGIA ATTESA',color:'#60a5fa',sub:'Sistema frontale in avvicinamento — pioggia diffusa attesa'};
+  if(pd.front>=25&&!pd.sentOnlySignal&&!radarVetoPioggia)return{icon:'🌦',label:'PIOGGIA POSSIBILE',color:'#7dd3fc',sub:'Fronte possibile — pioggia leggera localizzata'};
+  // v8.3: sentOnlySignal blocca le label di precipitazione — vento ≠ pioggia
+  // PATCH v9.2 — FIX ordine rami: la nuvolosità presente deve precedere sentOnlySignal.
+  // Prima: con sentinelle O-SO attive + cielo 100% coperto → "VENTO DA FRONTE"
+  // (nascondeva la nuvolosità). Ora: il cielo coperto viene mostrato sempre;
+  // se sentOnlySignal è attivo, lo segnaliamo nel sottotitolo (vento ≠ pioggia).
+  // PATCH v9.9beta1 (round 3) — FIX root: qui si leggeva mxC (f8_cloudMax, previsione
+  // 8h) invece di nowCloud (stato presente) — causa diretta del bug "CIELO
+  // COPERTO" a cielo sereno del 07/07/2026. Ora nowCloud guida lo stato
+  // presente; cloudOutlookNote aggiunge, solo se rilevante, una nota di
+  // previsione con orizzonte esplicito, senza mai contraddire l'icona/label.
+  if(nowCloud>75){
+    const sentNote=pd.sentOnlySignal?' · vento O-SO attivo ma modello 0% — nessuna precipitazione prevista':'';
+    return{icon:'☁',label:'CIELO COPERTO',color:'#94a3b8',sub:`Nubi prevalenti — senza precipitazioni significative${sentNote}${cloudOutlookNote}`};
+  }
+  if(pd.sentOnlySignal)return{icon:'🌬',label:'VENTO DA FRONTE',color:'#3a6080',sub:'Sentinelle tirreniche O-SO attive — modello 0% · nessuna precipitazione prevista'};
+  if(nowCloud>40)return{icon:'🌤',label:'PARZIALMENTE NUVOLOSO',color:'#d8eaf8',sub:`Nubi sparse — condizioni stabili${cloudOutlookNote}`};
+  return{icon:'☀',label:'SERENO',color:'#22c55e',sub:`Bel tempo osservato ora${cloudOutlookNote||' · condizioni stabili nelle prossime 8h'}`};
+}
+
+// ── RISCHIO ATTUALE ──
+function assessRisk(now,sst,obsConfirmedDry){
+  if(!now)return null;
+  const{tropo,cape,li,cin,ws250,t2m,blh}=now;
+  const _rst=getST();
+  const loadedGun=isLoadedGun(now);
+  // PATCH v9.4 — PATHWAY "CONVEZIONE EMBEDDED":
+  // Quando tropo è alta (>closed) ma il fronte fornisce sollevamento meccanico,
+  // CIN quasi nulla significa che il tappo non esiste più — il fronte lo ha
+  // già eroso. In questo caso "COMPARTI STAGNI" è fisicamente sbagliato.
+  // Il caso reale: 02-03/07/2026, tropo 14km, CIN 0-6 J/kg, pF>50%,
+  // CAPE 1600 J/kg — il pannello diceva COMPARTI STAGNI (score 0) mentre
+  // sul campo c'era pioggia a goccioloni con intensificazioni cicliche.
+  // Condizioni del pathway (tutte necessarie):
+  //   - tropo >= closed (sarebbe COMPARTI STAGNI senza questa patch)
+  //   - NOT loaded-gun (già gestito sopra)
+  //   - CIN < 20 J/kg (tappo eroso dal fronte)
+  //   - CAPE > 200 J/kg (energia sufficiente per convezione embedded)
+  //   - li < 0 (atmosfera instabile)
+  // Il pathway non produce mai score alto come un temporale libero — la
+  // convezione embedded è contenuta verticalmente dal fronte, non esplosiva.
+  const cinVal=Math.abs(cin??0);
+  const embeddedConv=!loadedGun
+    && (tropo?.z??0)>=_rst.closed
+    && cinVal<20
+    && cape>200
+    && li<0;
+  if((tropo?.z??0)>=_rst.closed && !loadedGun && !embeddedConv){
+    const latentUnstable = li < 0 && cinVal > 60;
+    if(latentUnstable){
+      const latentScore = li<-5?4:li<-2?3:2;
+      const liDesc=li<-5?'instab. forte':li<-2?'instab. moderata':'instab. debole';
+      return{level:'BASSO — INSTAB. LATENTE SIGILLATA',icon:'🟢',color:'#22c55e',
+             bg:'rgba(34,197,94,.1)',
+             reasons:[`Tropo ${(tropo.z/1000).toFixed(2)} km chiusa`,
+                      `⚠ LI ${li.toFixed(1)} K (${liDesc}) sigillata da CIN ${Math.round(cinVal)} J/kg · tappo`],
+             score:latentScore};
+    }
+    return{level:'BASSO — COMPARTI STAGNI',icon:'🟢',color:'#22c55e',
+           bg:'rgba(34,197,94,.1)',reasons:[`Tropo ${tropo.z}m chiusa`],score:0};
+  }
+  let score=0,reasons=[];
+  // Loaded-gun: già sopra la chiusura ma energia estrema bypassa
+  if(loadedGun && (tropo?.z??0)>=_rst.closed){
+    score+=2;
+    reasons.push(`⚡ Tropo chiusa ${(tropo.z/1000).toFixed(2)}km ma deroga CAPE estremo attiva (CAPE ${cape} J/kg>2500, LI ${li.toFixed(1)}K<0, CIN ${Math.round(cinVal)}<400 — non completamente sigillante)`);
+  }
+  // Convezione embedded: fronte erode CIN, tappo non sigillante nonostante tropo alta
+  if(embeddedConv){
+    const embScore=li<-4?3:li<-2?2:1;
+    score+=embScore;
+    reasons.push(`⚡ Convezione embedded — tropo ${(tropo?.z/1000).toFixed(2)}km chiusa ma CIN ${Math.round(cinVal)} J/kg (fronte erode il tappo) · CAPE ${cape} J/kg · LI ${li.toFixed(1)}K`);
+  }
+  if(tropo?.z<_rst.intermLo){score+=3;reasons.push(`⚠ Tropo bassa ${tropo.z}m (soglia stagionale ${Math.round(_rst.intermLo)}m)`);}else if(tropo&&tropo.z<_rst.closed){score+=1;reasons.push(`Tropo intermedia ${tropo.z}m`);}
+  if(cape>2500){score+=3;reasons.push(`CAPE estremo ${cape}`);}else if(cape>1000){score+=2;reasons.push(`CAPE alto ${cape}`);}else if(cape>300){score+=1;reasons.push(`CAPE mod. ${cape}`);}
+  const ci=Math.abs(cin);
+  if(li<-5){score+=3;reasons.push(`LI forte ${li.toFixed(1)}`);}else if(li<-2){score+=1;reasons.push(`LI instab. ${li.toFixed(1)}`);}
+  // Notte (21-06): inversione radiativa → strato limite stabile per raffreddamento radiativo del suolo
+  // Mattino (06-12): tappo mattutino → inibizione pre-riscaldamento solare
+  // Pomeriggio/sera: inversione residua o tappo diurno
+  const localHour=now.time?now.time.getHours():new Date().getHours();
+  const isNight=localHour>=21||localHour<6;
+  const isMorning=localHour>=6&&localHour<12;
+  const blhVal=blh??1000;
+  const morningSealed=ci>40&&blhVal<300&&cape<100;
+  const morningFull=ci>60&&blhVal<200&&cape<50;
+  if(morningFull){
+    score=Math.max(0,score-2);
+    const blLbl=isNight
+      ?`⬇ Inversione radiativa notturna: CIN ${ci}J/kg PBL ${Math.round(blhVal)}m`
+      :isMorning
+        ?`⬇ BL sigillata (tappo mattutino): CIN ${ci}J/kg PBL ${Math.round(blhVal)}m`
+        :`⬇ BL sigillata: CIN ${ci}J/kg PBL ${Math.round(blhVal)}m`;
+    reasons.push(blLbl);
+  }else if(morningSealed){
+    score=Math.max(0,score-1);
+    const blLbl2=isNight
+      ?`⬇ Strato limite stabile notturno: CIN ${ci}J/kg PBL ${Math.round(blhVal)}m`
+      :`⬇ Tappo (inversione residua): CIN ${ci}J/kg PBL ${Math.round(blhVal)}m`;
+    reasons.push(blLbl2);
+  }else if((cape>50||li<0)&&ci<50){score+=2;reasons.push(`CIN fragile ${ci}`);}
+  else if((cape>50||li<0)&&ci<150){score+=1;}
+  if(ws250>=60){score+=2;reasons.push(`Jet ${Math.round(ws250)} km/h`);}
+  // SST: differenziale termico aria-mare (ΔT = SST − T_aria)
+  const deltaT=sst!=null?(sst-t2m):null;
+  if(deltaT!=null&&deltaT>3){score+=2;reasons.push(`ΔT mare-aria +${deltaT.toFixed(1)}°C (destabilizzante)`);}
+  else if(deltaT!=null&&deltaT>1){score+=1;reasons.push(`ΔT mare-aria +${deltaT.toFixed(1)}°C`);}
+  // (deltaT <= 0 = mare più freddo dell'aria → stabilizzante, nessun contributo)
+  if(t2m>T_MED+T_DELTA){score+=2;reasons.push(`⚠ Caldo estremo ${t2m.toFixed(1)}°C`);}
+  if(t2m<T_MED-T_DELTA){score+=2;reasons.push(`⚠ Freddo estremo ${t2m.toFixed(1)}°C`);}
+  // Cap embedded convection DOPO tutto lo scoring — convezione contenuta
+  // nel fronte non può superare MODERATO (max 5/10).
+  if(embeddedConv) score=Math.min(score,5);
+  // FIX Belardo_v9.9beta1 (round 5) — GATE OSSERVATIVO: prima questo banner non
+  // sapeva nulla di radar/METAR e poteva dichiarare ELEVATO/CRITICO su
+  // proxy (CAPE/LI/CIN/ΔT) anche a cielo confermato sereno/asciutto —
+  // la stessa sera in cui il Secondo Avviso (ROSSO) e la card Convettiva
+  // (0% per il buco INTERMEDIA) si contraddicevano già a vicenda dentro lo
+  // stesso pannello. Qui, come per pC, l'osservazione abbassa ma non alza
+  // mai: se l'energia è genuinamente estrema (loadedGun) il tetto resta
+  // più permissivo perché quell'energia va comunque segnalata.
+  if(obsConfirmedDry===true && !loadedGun) score=Math.min(score,4);
+  const info=score>=8?{level:'CRITICO',icon:'🔴',color:'#ef4444',bg:'rgba(239,68,68,.12)'}:score>=5?{level:'ELEVATO',icon:'🟠',color:'#f97316',bg:'rgba(249,115,22,.12)'}:score>=3?{level:'MODERATO',icon:'🟡',color:'#eab308',bg:'rgba(234,179,8,.12)'}:{level:'BASSO',icon:'🟢',color:'#22c55e',bg:'rgba(34,197,94,.12)'};
+  return{...info,score,reasons,morningSealed:morningSealed||morningFull,deltaT,obsCapped:obsConfirmedDry===true&&!loadedGun};
+}
+
+function assessPrimo(km){
+  if(km===null)return{lv:'grigio',desc:'Dato non disponibile'};
+  const _p=getST();const kmM=km*1000;
+  if(kmM>=_p.closed)return{lv:'verde',desc:`${km.toFixed(2)} km — Valvola CHIUSA (soglia mese: ${(_p.closed/1000).toFixed(1)}km)`};
+  if(kmM>=_p.intermLo)return{lv:'giallo',desc:`${km.toFixed(2)} km — Valvola INTERMEDIA`};
+  if(kmM>=_p.open)return{lv:'arancio',desc:`${km.toFixed(2)} km — Valvola APERTA`};
+  return{lv:'rosso',desc:`${km.toFixed(2)} km — Valvola SPALANCATA`};}
+function assessSecondo(now,sst,obsConfirmedDry){
+  if(!now)return null;
+  const{cape,cin,li,vil,wv,ws250,wd,blh}=now;
+  const det={},sc=[];
+  const ca=Math.abs(cin??0),m=(cape??0)-ca,cL=m>200?3:m>50?2:m>0?1:0;
+  sc.push(cL);det.cape={lv:lvS(cL),val:`${cape??0} − ${ca} = ${m>=0?'+':''}${m.toFixed(0)} J/kg`};
+  const lL=li<-5?3:li<-2?2:li<0?1:0;sc.push(lL);det.li={lv:lvS(lL),val:`${li>=0?'+':''}${li.toFixed(1)} K`};
+  const vv=vil??0;let vVeto=false,vL=0;
+  if(vv>2){vL=3;vVeto=true;}else if(vv>.1){vL=2;vVeto=true;}
+  if(vVeto)sc.forEach((_,i)=>{sc[i]=Math.max(sc[i],2);});
+  sc.push(vL);det.vil={lv:lvS(vL),val:`${vv.toFixed(2)} kg/m²`,veto:vVeto};
+  let tS=0;const tD=[];
+  if(ws250>=60){tS++;tD.push(`Jet ${Math.round(ws250)} km/h`);}
+  if(wd>=150&&wd<=250){tS++;tD.push(`Vento ${Math.round(wd)}°`);}
+  if(sst!=null&&sst>17){tS++;tD.push(`SST ${sst}°C`);}
+  if(blh!=null&&blh>800){tS++;tD.push(`PBL ${Math.round(blh)}m`);}
+  const tL=tS>=3?2:tS>=2?1:0;sc.push(tL);det.trig={lv:lvS(tL),val:tD.length?tD.join(', '):'nessuno'};
+  // SST+Umidità: usa differenziale termico ΔT = SST − T_aria
+  const deltaT2=sst!=null?(sst-(now.t2m??15)):null;
+  const deltaTDesc=deltaT2!=null?`ΔT ${deltaT2>0?'+':''}${deltaT2.toFixed(1)}°C · SST ${sst}°C`:`SST ${sst??'N/D'}°C`;
+  const uL=deltaT2!=null&&deltaT2>3?2:deltaT2!=null&&deltaT2>1?1:deltaT2!=null&&deltaT2<=0?0:(wv>25?1:0);
+  sc.push(uL);det.umid={lv:lvS(uL),val:`H₂O ${wv?.toFixed(1)??'N/D'} · ${deltaTDesc}`};
+  let mx=Math.max(...sc);if(!vVeto&&tS<2)mx=Math.max(0,mx-1);
+  // FIX Belardo_v9.9beta1 (round 5) — GATE OSSERVATIVO: prima questo composito poteva
+  // dichiarare ROSSO su CAPE/LI/VIL da soli, anche a cielo confermato
+  // sereno/asciutto da radar+METAR — la stessa sera in cui pC (Convettiva)
+  // diceva 0% per il buco INTERMEDIA. Stessa gerarchia osservazione>proxy
+  // di assessRisk e pC: qui abbassa, mai alza. Se l'energia è genuinamente
+  // estrema (CAPE>2500,LI<0,CIN<400 — stessa soglia di isLoadedGun) il
+  // tetto resta più permissivo (ARANCIO, non GIALLO) perché va comunque
+  // segnalata anche a cielo sereno.
+  const obsCapped = obsConfirmedDry===true && !isLoadedGun(now);
+  if(obsCapped) mx=Math.min(mx,2);
+  return{lv:lvS(mx),det,vVeto,noVil:!vVeto&&mx>=2,obsCapped};
+}
+
+// ── EVENTI ESTREMI 48H ──
+function calcExt48H(hrs,sst,farSents,farSwell){
+  if(!hrs.length)return{events:[],maxP:0,level:'—',color:'#2a5068',icon:'⚪',cross:null};
+  const now=hrs[0],n48=hrs;
+  const tz=now.tropo?.z??13000;
+  // FIX v8.5 FALLA-A: estrazione orizzonte 48h — supera la cecità notturna
+  const mxGusts48=Math.max(...n48.map(h=>h.gusts??0));
+  const mxWs25048=Math.max(...n48.map(h=>h.ws250??0));
+  const mxT2m48=Math.max(...n48.map(h=>h.t2m??-50));
+  const mnT2m48=Math.min(...n48.map(h=>h.t2m??50));
+  const mxPrec48=Math.max(...n48.map(h=>h.precProb??0));
+
+  // ── FIX v8.4 BUG-2: context-aware CAPE/LI ──────────────────────────
+  // v8.2 usava mxCape/mnLi globali su 48h: un picco CAPE a h+36 con
+  // CIN=400 e tropo chiusa veniva contato come rischio reale → falso positivo.
+  // FIX: seleziona solo le ore dove le condizioni sono CONTESTUALMENTE
+  // favorevoli alla convezione (tropo aperta, CIN contenuta, LI<0).
+  // Su quelle ore si calcola il massimo CAPE e il minimo LI.
+  // Se nessuna ora è favorevole → mxCape=0, mnLi=5 (neutro).
+  // SOGLIE STAGIONALI per eventi estremi
+  const _ext=getST();
+  // favHrs: ore fisicamente favorevoli per eventi estremi
+  // Usa favTropo stagionale (media-300m)
+  // PATCH v8.7.1 LOADED GUN: deroga per CAPE estremo (>2500 J/kg con LI<0 e CIN<400)
+  // Fisicamente: energia potenziale così alta supera il blocco della tropo alta,
+  // ma solo se la CIN è parzialmente ceduta (<400 J/kg) — con CIN>400 ancora sigillata.
+  // Il contributo viene smorzato in pRov dal convFactor stagionale.
+  const favHrs=n48.filter(h=>{
+    const stdFav=h.cape>100&&h.li<0&&(h.tropo?.z??13000)<=_ext.favTropo&&Math.abs(h.cin??999)<300;
+    return stdFav||isLoadedGun(h); // PATCH v8.10: deroga centralizzata (era duplicata qui)
+  });
+  const mxCape=favHrs.length>0?Math.max(...favHrs.map(h=>h.cape)):0;
+  const mnLi=favHrs.length>0?Math.min(...favHrs.map(h=>h.li)):5;
+  // Ore consecutive favorevoli: un evento reale persiste, un artefatto è isolato
+  let maxConsec=0,curConsec=0;
+  for(const h of n48){
+    const fav=h.cape>200&&h.li<0&&(h.tropo?.z??13000)<=_ext.favTropo&&Math.abs(h.cin??999)<300;
+    if(fav){curConsec++;maxConsec=Math.max(maxConsec,curConsec);}else curConsec=0;
+  }
+  // ────────────────────────────────────────────────────────────────────
+
+  const mxWv=Math.max(...n48.map(h=>h.wv??0));
+  const jetDir=now.wd250??0;
+  const jetN=(jetDir>=315||jetDir<=45)&&now.ws250>=60;
+
+  // Far sentinels
+  const fGi=farSents?.find(s=>s.id==='gi');
+  const fPa=farSents?.find(s=>s.id==='pa');
+  const fBc=farSents?.find(s=>s.id==='bc');
+  const fAl=farSents?.find(s=>s.id==='al');
+  const fBg=farSents?.find(s=>s.id==='bg');
+  const swGi=farSwell?.gi,swPa=farSwell?.pa;
+
+  // PRECIPITAZIONE ROVINOSA >50mm/h
+  // v8.4: usa mxCape/mnLi filtrati (ore contestualmente favorevoli).
+  // tropoTrend mantiene la logica v8.2 (solo se instabilità futura confermata).
+  const tropo0=hrs[0]?.tropo?.z??13000;
+  const futureHr=hrs[Math.min(12,hrs.length-1)];
+  const tropo12=futureHr?.tropo?.z??tropo0;
+  const tropoTrend=tropo12-tropo0;
+  const futureLi=futureHr?.li??5;
+  const futureCape=futureHr?.cape??0;
+  const tropoTrendActive=tropoTrend<0&&(futureLi<0||futureCape>50);
+  let pRov=0;
+  // FIX v8.5 FALLA-B: tropo bassa contribuisce a pRov solo se c'è umidità o pioggia prevista
+  // (evita falso alluvione invernale da geometria stagionale in alta pressione)
+  if(mxWv>20||mxPrec48>10){
+    // Soglie stagionali: in inverno la tropo scende fisiologicamente a 9-10km
+    // Il contributo scatta solo quando la tropo è SOTTO la soglia stagionale "aperta"
+    if(tz<_ext.open)pRov+=35;
+    else if(tz<_ext.intermLo)pRov+=15;
+  }
+  // CAPE/LI filtrati: solo ore fisicamente favorevoli
+  if(mxCape>2000)pRov+=30;else if(mxCape>800)pRov+=15;else if(mxCape>300)pRov+=8;
+  if(mnLi<-5)pRov+=20;else if(mnLi<-2)pRov+=10;
+  if(mxWv>25)pRov+=10;
+  if(swGi?.sw>2)pRov+=15;if(swPa?.sw>1.5)pRov+=10;
+  // Persistenza evento: ore consecutive favorevoli pesano il segnale
+  // Un picco isolato di 1h vale meno di un blocco di 6h consecutive
+  if(maxConsec>=6)pRov+=15;else if(maxConsec>=3)pRov+=8;else if(maxConsec>=1)pRov+=3;
+  if(tropoTrendActive){
+    if(tropoTrend<-1500)pRov+=20;else if(tropoTrend<-800)pRov+=10;
+  }
+  pRov=Math.min(90,Math.round(pRov));
+  const tropoTrendLabel=tropoTrendActive&&tropoTrend<-1500?`·TropoTrend ${Math.round(tropoTrend)}m/12h⚠`:tropoTrendActive&&tropoTrend<-800?`·TropoTrend ${Math.round(tropoTrend)}m/12h`:'';
+  const consecLabel=maxConsec>=3?`·${maxConsec}h consec`:'';
+
+  // PATCH v8.11 — SCHEDA 5 (calcolo incrociato): quantifica esplicitamente
+  // l'unica via di contaminazione "istantaneo→48h" oggi presente nel codice:
+  // `tz` (riga ~920, tropopausa dell'ORA ATTUALE, non un aggregato 48h) entra
+  // nella formula di pRov qui sopra (righe ~1038-1040) con un peso fino a 35
+  // punti su 90 — lo stesso ordine di grandezza del contributo CAPE massimo.
+  // Tutto il resto della formula (mxCape/mnLi/maxConsec/tropoTrend/mxWv/swell)
+  // usa aggregati sull'intera finestra 48h, non il dato dell'ora corrente.
+  const crossTzContrib=(mxWv>20||mxPrec48>10)?(tz<_ext.open?35:tz<_ext.intermLo?15:0):0;
+  // FIX v8.5 FALLA-A: vento su orizzonte 48h
+  let pBur=0;
+  if(mxGusts48>60)pBur+=30;else if(mxGusts48>40)pBur+=15;
+  if(mxWs25048>=80)pBur+=20;else if(mxWs25048>=60)pBur+=10;
+  if(pRov>30)pBur+=10;
+  if(fBc?.wg>60)pBur+=20;else if(fBc?.wg>40)pBur+=10;
+  if(fPa?.wg>60)pBur+=15;
+  pBur=Math.min(85,Math.round(pBur));
+
+  // ALLUVIONE GRAVE — con integrazione Effetto Tappo Volturno (PATCH v8.7.1)
+  let pAl=Math.min(70,Math.round(pRov*0.5));
+  const _gd=STATE.flood?.daily;
+  let _mxQ=0;
+  if(_gd?.time){
+    const _nowISO=new Date().toISOString().slice(0,10);
+    const _si=_gd.time.findIndex(t=>t>=_nowISO);
+    if(_si>=0){
+      const _qa=_gd.river_discharge_median??_gd.river_discharge;
+      _mxQ=Math.max(_qa?.[_si]??0,_qa?.[_si+1]??0,_qa?.[_si+2]??0);
+    }
+  }
+  const _swLocalNow=STATE.marHrs?.length?Math.max(...STATE.marHrs.map(m=>m.sH)):0;
+  if(_mxQ>500){
+    pAl+=Math.min(20,Math.round((_mxQ-500)/25));
+    if(_swLocalNow>2.0)pAl+=25;
+    else if(_swLocalNow>1.2)pAl+=15;
+    else if(_swLocalNow>0.8)pAl+=8;
+  } else if(_mxQ>250&&_swLocalNow>3.0){
+    pAl+=15;
+  } else if(_mxQ>150&&_swLocalNow>4.0){
+    pAl+=10;
+  }
+  if((swGi?.sw??0)>3.0&&_mxQ>300)pAl+=10;
+  pAl=Math.min(95,Math.round(pAl));
+
+  // CALDO CRITICO wet-bulb >28°C
+  // FIX v8.5 FALLA-A: caldo su massime 48h
+  // PATCH v9.2 — FIX CALDO CRITICO: sostituisce il proxy T2m>28 con il
+  // wet-bulb reale approssimato (Stull 2011) — la formula precedente usava
+  // mxT2m48 come se fosse il wet-bulb, ma sono grandezze diverse: T2m=32°C
+  // con RH=50% dà Tw~23°C (nessun rischio), T2m=32°C con RH=90% dà Tw~30°C
+  // (rischio reale). Il falso positivo del 03/07/2026 (Tw reale ~22°C,
+  // allerta rossa scattata) è prodotto esattamente da questo errore.
+  // Formula Stull 2011: Tw = T*atan(0.151977*(RH+8.313659)^0.5)
+  //   + atan(T+RH) - atan(RH-1.676331)
+  //   + 0.00391838*RH^1.5*atan(0.023101*RH) - 4.686035
+  function calcWetBulb(t,rh){
+    if(rh==null||t==null)return t;
+    return t*Math.atan(0.151977*Math.pow(rh+8.313659,0.5))
+      +Math.atan(t+rh)-Math.atan(rh-1.676331)
+      +0.00391838*Math.pow(rh,1.5)*Math.atan(0.023101*rh)
+      -4.686035;
+  }
+  const mxWetBulb48=Math.max(...n48.map(h=>calcWetBulb(h.t2m??0,h.rh??50)));
+  let pCal=0;
+  if(mxWetBulb48>26)pCal+=10;  // soglia prudenziale
+  if(mxWetBulb48>27)pCal+=15;  // avvicinamento soglia critica
+  if(mxWetBulb48>28)pCal+=20;  // soglia sopravvivenza
+  if(mxWetBulb48>30)pCal+=20;  // estremo
+  if(sst!=null&&sst>25)pCal+=10; // mare caldo amplifica umidità notturna
+  if(fAl?.t850>25)pCal+=15;else if(fAl?.t850>22)pCal+=8; // avvezione calda in quota
+  if(jetN)pCal=Math.max(0,pCal-20); // jet N porta aria più fresca
+  pCal=Math.min(90,Math.round(pCal));
+  // ────────────────────────────────────────────────────────────────────
+
+  // ONDATA FREDDO ESTREMO
+  let pFrd=0;
+  if(fBg?.t850!=null&&fBg.t850<-10)pFrd+=30;else if(fBg?.t850!=null&&fBg.t850<-5)pFrd+=15;
+  if(fBg?.z500!=null&&fBg.z500<5500)pFrd+=20;
+  if(mnT2m48<T_MED-T_DELTA)pFrd+=25; // FIX v8.5 FALLA-A: freddo su minime 48h
+  pFrd=Math.min(80,Math.round(pFrd));
+
+  const mk=(ev,p,dr)=>{const c=p>=60?'#ef4444':p>=35?'#f97316':p>=15?'#eab308':'#22c55e';return{ev:ev+(p>=60?' 🔴':''),p,dr,c};};
+
+  // PATCH v8.12 — EVENTO IN CORSO ORA + TRAIETTORIA 48H
+  // Origine: osservazione dell'utente — se il pannello viene lanciato MENTRE
+  // un evento estremo è già in scarica (pioggia/vento in corso ADESSO), il
+  // quadro 48h (se non mostra ulteriore rischio) è un'informazione utile per
+  // interpretare l'episodio in corso come isolato/in esaurimento, non come
+  // l'inizio di un pattern sostenuto. Questo è un vero collegamento
+  // 48h→istantaneo — diverso da quello già documentato (tz→pRov, istantaneo
+  // →48h) e PRIMA NON ESISTEVA nel codice: `h.prec` (precipitazione misurata/
+  // prevista in mm, diversa dalla probabilità precProb) veniva estratta da
+  // extractHours ma scartata, mai usata in nessun calcolo o in nessuna UI.
+  // Il pannello era quindi puramente prognostico, privo di un rilevatore
+  // diagnostico di "sta già succedendo ORA".
+  // PATCH v9.1 — FIX BUG eventInProgress: il campo `now.prec` di Open-Meteo
+  // è precipitazione PREVISTA DAL MODELLO per quell'ora, NON misurata sul campo.
+  // Usarlo come "rilevatore di pioggia in corso" produceva falsi positivi:
+  // il modello prevede pioggia → il pannello dice "pioggia in corso" → sul campo
+  // è asciutto. Caso reale: 02/07/2026 08:10, nessuna pioggia da 150h,
+  // il pannello mostrava "EVENTO IN CORSO · SOSTENUTO · 3.6mm/h" — falso.
+  // FIX: il trigger ora usa SOLO precProb (soglia alzata a 80%) + CAPE>500.
+  // v9.3: METAR come Livello 1 osservativo — se disponibile, sovrascrive NWP
+  const nowPrecMm=now.prec??0,nowPrecProb=now.precProb??0;
+  const metarRainNow=now.metarRain??null;
+  const eventInProgress=metarRainNow!=null
+    ? metarRainNow
+    : (nowPrecProb>=80&&now.cape>500);
+  let trajectory=null;
+  if(eventInProgress){
+    const next12=hrs.slice(1,13);
+    const persists=hrs.slice(1,7).some(h=>(h.prec??0)>=2||(h.precProb??0)>=60);
+    const maxP48=Math.max(pRov,pBur,pAl,pCal,pFrd);
+    // PATCH v8.13 — STIMA DURATA ("quanto durerà"), non solo isolato/sostenuto.
+    // Origine: osservazione dell'utente — chi viene colto alla sprovvista da
+    // un evento e lancia il pannello in stato di allerta ha bisogno di una
+    // risposta diretta e immediata: COSA ho davanti, QUANTO durerà. Una
+    // classificazione qualitativa (isolato/sostenuto) non basta da sola.
+    // Scansiona le prossime 12h cercando la prima ora "calma" (prec<1.5mm/h
+    // e precProb<35%): quella è la stima di esaurimento. Se non si trova
+    // entro 12h, la durata resta esplicitamente indeterminata (non si inventa
+    // un numero oltre l'orizzonte realmente coperto dal modello a breve termine).
+    let etaHours=null;
+    for(let k=0;k<next12.length;k++){
+      const h=next12[k];
+      if((h.prec??0)<1.5&&(h.precProb??0)<35){etaHours=k+1;break;}
+    }
+    if(persists){
+      trajectory={status:'SOSTENUTO',color:'#f97316',etaHours,
+        desc:etaHours!=null
+          ?`Il segnale persiste nelle prossime ore ma il modello indica un calo entro circa <b>${etaHours}h</b>.`
+          :`Il segnale persiste e il modello non mostra un'ora di pausa nelle prossime 12h — durata non determinabile in questo momento, monitorare.`};
+    }else if(maxP48<30){
+      trajectory={status:'ISOLATO — IN ESAURIMENTO',color:'#22c55e',etaHours,
+        desc:`Nessuna categoria 48h supera il 30% (massimo: ${maxP48}%) — il quadro a 48h non mostra un pattern di rischio sostenuto.${etaHours!=null?` Esaurimento stimato entro circa <b>${etaHours}h</b>.`:` Calo atteso a breve, orario di fine non determinabile con precisione dal modello.`}`};
+    }else{
+      trajectory={status:'IN CORSO — POSSIBILE RECRUDESCENZA',color:'#eab308',etaHours,
+        desc:`L'episodio attuale potrebbe attenuarsi${etaHours!=null?` entro circa <b>${etaHours}h</b>`:' a breve'}, ma il quadro 48h mantiene una categoria sopra il 30% (massimo: ${maxP48}%) — non escludere un nuovo episodio nella stessa finestra.`};
+    }
+  }
+  const events=[
+    mk('Precipitazione rovinosa (>50mm/h)',pRov,`CAPE ${mxCape}·LI ${mnLi<5?mnLi.toFixed(1)+'K':'—'}·Swell Atl.${tropoTrendLabel}${consecLabel}`),
+    mk('Vento di burrasca (raffiche >90km/h)',pBur,`Jet max ${Math.round(mxWs25048)}km/h·Barcellona`),
+    mk('Alluvione grave (GloFAS >500m³/s)',pAl,`Q ${Math.round(_mxQ)}m³/s·Sw ${_swLocalNow.toFixed(1)}m·SST ${sst??'N/D'}°C`),
+    mk('Caldo critico (wet-bulb >28°C)',pCal,`Tw max ${mxWetBulb48.toFixed(1)}°C·Algeri T850 ${fAl?.t850?.toFixed(0)??'N/D'}°C`),
+    mk('Ondata di freddo estremo',pFrd,`Belgrado T850 ${fBg?.t850?.toFixed(0)??'N/D'}°C·Min ${mnT2m48.toFixed(1)}°C`),
+  ];
+  const maxP=Math.max(...events.map(e=>e.p));
+  const level=maxP>=60?'ALLERTA ROSSA':maxP>=35?'MONITORAGGIO ELEVATO':maxP>=15?'BASSO':'TRASCURABILE';
+  const color=maxP>=60?'#ef4444':maxP>=35?'#f97316':maxP>=15?'#eab308':'#22c55e';
+  const icon=maxP>=60?'🔴':maxP>=35?'🟠':maxP>=15?'🟡':'🟢';
+  return{events,maxP,level,color,icon,cross:{tz,tzOpen:_ext.open,tzIntermLo:_ext.intermLo,tzContrib:crossTzContrib,pRovTotal:pRov},eventInProgress,nowPrecMm,trajectory,maxConsec};
+}
+
+// ── AQI / UV ──
+function aqiLv(v){if(v==null)return{l:'N/D',c:'#4a7fa0',d:'—'};if(v<=20)return{l:'BUONA',c:'#22c55e',d:'Qualità ottimale.'};if(v<=40)return{l:'DISCRETA',c:'#84cc16',d:'Condizioni accettabili.'};if(v<=60)return{l:'MODERATA',c:'#eab308',d:'Sensibili: bambini, anziani, asmatici.'};if(v<=80)return{l:'SCARSA',c:'#f97316',d:'Tutti possono avvertire effetti.'};return{l:'PESSIMA',c:'#ef4444',d:'⚠ Allerta sanitaria.'};}
+// ── SOLE — ALBA/TRAMONTO ASTRONOMICO (v9.6) ───────────────────────────────
+// Formula NOAA semplificata — accuratezza ±2 minuti per latitudine Mediterranea.
+// Non richiede API — calcolato da coordinate CV (41.035°N, 13.942°E).
+function calcSunTimes(date){
+  const lat=CV.lat,lon=CV.lon;
+  const rad=Math.PI/180;
+  const doy=Math.floor((date-(new Date(date.getFullYear(),0,0)))/86400000);
+  const B=(360/365)*(doy-81)*rad;
+  const eot=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B); // equazione del tempo (min)
+  const tz=1; // Europa Centrale — UTC+1 (standard); l'ora legale viene gestita sotto
+  const isDST=date.getTimezoneOffset()<-60; // CEST = UTC+2
+  const tzOff=isDST?2:1;
+  const solarNoon=12+(4*(15*tzOff-lon)-eot)/60; // mezzogiorno solare locale
+  const decl=23.45*Math.sin(B)*rad;
+  const ha=Math.acos(-Math.tan(lat*rad)*Math.tan(decl))/rad;
+  const sunrise=solarNoon-ha/15;
+  const sunset =solarNoon+ha/15;
+  const civil  =0.833/15; // 50' sotto orizzonte = alba/tramonto civile
+  return{
+    sunrise,sunset,
+    dawn  :sunrise-civil,
+    dusk  :sunset +civil,
+    noon  :solarNoon,
+    isDaylight:(h)=>h>=sunrise&&h<=sunset,
+    isCivil:(h)=>h>=sunrise-civil&&h<=sunset+civil
+  };
+}
+
+function hToStr(hDec){
+  const h=Math.floor(hDec),m=Math.round((hDec-h)*60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function uvLv(v){if(v==null)return{l:'—',c:'#4a7fa0',pct:0,rec:'—',spf:'—'};if(v<=2)return{l:'BASSO',c:'#22c55e',pct:v/12,rec:'Nessuna precauzione',spf:'—'};if(v<=5)return{l:'MODERATO',c:'#eab308',pct:v/12,rec:'SPF 15+ · Occhiali',spf:'SPF 15+'};if(v<=7)return{l:'ALTO',c:'#f97316',pct:v/12,rec:'SPF 30+ · Ombra 12–15',spf:'SPF 30+'};if(v<=10)return{l:'MOLTO ALTO',c:'#ef4444',pct:v/12,rec:'SPF 50+ · Evitare 11–16',spf:'SPF 50+'};return{l:'ESTREMO',c:'#9333ea',pct:1,rec:'Protezione totale obbligatoria',spf:'SPF 50+'};}
+
+function sentFlagInfo(ws,wg,wd,grp,sPrec,sProb){
+  const w=wg??ws??0;
+  if(grp==='w'){
+    // Stazioni tirreniche: segnale SW/O = precursore frontale per CV
+    const isSW=wd!=null&&(wd>=180&&wd<=270);
+    const isW=wd!=null&&(wd>=240&&wd<=310);
+    const sterileNote=(sPrec??1)<0.2&&(sProb??100)<20?' (sterile)':'';
+    if(w>=40&&isSW)return{txt:'⚠ Libeccio/SW FORTE — fronte prossimo'+sterileNote,cls:'crit'};
+    if(w>=20&&isSW)return{txt:'▲ Libeccio/SW — sorvegliare'+sterileNote,cls:(sPrec??1)<0.2&&(sProb??100)<20?'warn':'alert'};
+    if(w>=15&&isW)return{txt:'O-SO attivo — possibile fronte 4-8h'+sterileNote,cls:'warn'};
+    return{txt:'✓ Neutro',cls:'ok'};
+  }else{
+    // Stazioni campano-locali: Scirocco/SE = umidità in ingresso; raffiche forti = instabilità
+    const isSE=wd!=null&&(wd>=110&&wd<=190);
+    const isSW=wd!=null&&(wd>=190&&wd<=260);
+    if(w>=40)return{txt:'⚠ Vento forte locale — instabilità',cls:'crit'};
+    if(isSE&&w>=20)return{txt:'▲ Scirocco — ΔT mare-aria in aumento',cls:'alert'};
+    if(isSW&&w>=15)return{txt:'Libeccio locale — monitorare',cls:'warn'};
+    return{txt:'✓ Neutro',cls:'ok'};
+  }
+}
+
+// ── BRIEFING ──
+// ── BRIEFING — BUILDER A SEZIONI (Belardo_v9.9beta1, round 7) ─────────────
+// PRIMA: makeBf era un unico template literal enorme scritto a mano riga
+// per riga. Confrontando cosa il pannello acquisisce/calcola oggi con cosa
+// arrivava nel testo copiabile, mancavano interi blocchi già computati
+// altrove: sentinelle lontane, cross-check METAR sulle sentinelle, qualità
+// aria (CAMS), qualità sole (UV), il composito "Secondo Avviso"
+// (eventi estremi in corso) e l'intera card "Eventi Estremi 48h" — un
+// documento che dichiara più fonti nella riga "Fonte:" di quante ne
+// riporti nel corpo è la stessa classe di incoerenza già corretta nel
+// livello di calcolo, spostata nel livello di reporting.
+// ORA: ogni sezione è una funzione pura che legge STATE + i dati già
+// disponibili e si auto-omette se il dato non c'è (stesso criterio già
+// in uso per srcParts) — struttura a 8 parti allineata alla definizione
+// del pannello data dall'operatore: (1) constatazione meteo, (2) qualità
+// aria, (3) qualità sole, (4) eventi estremi in corso, (5) previsione
+// alta risoluzione, (6) previsione qualità aria, (7) previsione qualità
+// sole, (8) predizione eventi estremi oltre 48h. Quando arriverà la
+// griglia zone-sorgenti (beta2), sarà "aggiungi una sezione", non
+// chirurgia su una stringa da 90 righe.
+
+function bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd){
+  const now=hrs[0];
+  const ci=Math.abs(Math.round(now.cin)),cr=now.cape>50||now.li<0;
+  const m=marHrs[0];
+  let fl='VOLTURNO (GloFAS): N/D';
+  if(flood?.daily?.time){const td=new Date().toISOString().slice(0,10),idx=flood.daily.time.findIndex(t=>t>=td);if(idx>=0){const q=flood.daily.river_discharge_median?.[idx]??flood.daily.river_discharge?.[idx],qMx=flood.daily.river_discharge_max?.[idx],qMn=flood.daily.river_discharge_min?.[idx];if(q!=null)fl=`VOLTURNO (GloFAS): Q=${Math.round(q)} m³/s [min ${Math.round(qMn??q)}–max ${Math.round(qMx??q)}]${q>1000?' 🔴 CRITICO':q>500?' ⚠ ELEVATO':q>150?' ▲ MODERATO':' ✓ NORMALE'}`;}}
+  const _bst=getST();
+  const tkm=(now.tropo?.z??13000)/1000;
+  const sentTirWindBf=nearSents?.filter(s=>s.grp==='w'&&s.ok).some(s=>(s.wg??s.ws??0)>=15)??false;
+  const threshLine=`SOGLIE ATTIVE: ${_bst.seasonLabel} · ${_bst.diurnalLabel} | H₂O fronte>${_bst.frontH2O} · VIL>${_bst.vilMin} · Cloud>${_bst.cloudFront}% · cap ${_bst.frontCap}%${sentTirWindBf?'+5% (sent.)':''}`;
+  const lgBf=isLoadedGun(now);
+  const cLine=now.tropo?.z>=_bst.closed
+    ?(lgBf
+        ?`💧💧💧 Convettiva: ${pd.conv}% ⚡ ENERGIA ESTREMA sotto tropo chiusa (CAPE ${now.cape}·LI ${now.li.toFixed(1)}K·CIN ${Math.abs(Math.round(now.cin??0))}<400 — deroga attiva, non sopprimere)`
+        :`💧💧💧 Convettiva: 0% (tropo ${tkm.toFixed(1)} km — valvola chiusa · soglia mese ${(_bst.closed/1000).toFixed(1)}km)`)
+    :`💧💧💧 Convettiva: ${pd.conv}%${pd.conv>=15?' ⚠':''}${pd.maxVil===0?' [VIL=0]':''}`;
+  const fLine=pd.radarConfirmedDry===true?`💧 Frontale: 0% ✓ Radar/satellite confermano asciutto (segnale modello ${pd.front}% non osservato sul campo)`
+    :pd.isFronteSterile?`💧 Frontale: ${pd.front}% ⚠ FRONTE STERILE — vento senza pioggia sulle sentinelle (smorzamento ${Math.round((1-pd.fronteSterileF)*100)}%)`:pd.frontInProgress?`💧 Frontale: ${pd.front}% ⚠ FRONTE IN ATTO — H₂O ${now.wv?.toFixed(1)} kg/m² · VIL ${now.vil} · modello NWP in ritardo`:pd.sentOnlySignal
+    ?`💧 Frontale: pre-segnale sentinelle O-SO [modello 0% · vento ≠ pioggia]`
+    :`💧 Frontale: ${pd.front}%${pd.front>=50?' ⚠ Sistema in avvicinamento':pd.front>=20?' (fronte possibile)':''}`;
+  let sentLine='SENTINELLE PROSSIME: N/D';
+  if(nearSents?.length){const parts=nearSents.map(s=>{const ws=s.ws??0,fl2=sentFlagInfo(ws,s.wg,s.wd,s.grp);return`${s.name} ${Math.round(ws)}km/h ${wdL(s.wd)} [${fl2.txt.replace('✓ ','')}]`;});sentLine=`SENTINELLE PROSSIME: ${parts.join(' · ')}`;}
+  // NUOVO round 7: sentinelle lontane — prima assenti dal briefing pur
+  // essendo già acquisite e mostrate in UI (anticipo 10-36h su CV).
+  let farLine=null;
+  if(STATE.farSents?.length){const parts=STATE.farSents.map(s=>{const bits=[`${s.name} ${Math.round(s.ws??0)}km/h ${wdL(s.wd)}`];if(s.t850!=null)bits.push(`T850 ${s.t850.toFixed(0)}°C`);return bits.join(' ');});farLine=`SENTINELLE LONTANE: ${parts.join(' · ')}`;}
+  // NUOVO round 7: cross-check METAR sulle sentinelle — prima visibile solo
+  // in UI, mai nel testo esportato, pur essendo la base della gerarchia
+  // "osservazione>modello" citata nella riga Fonte:.
+  let metarSentLine=null;
+  if(STATE.metarData?.sents){
+    const parts=Object.entries(STATE.metarData.sents).filter(([,v])=>v).map(([id,v])=>`${METAR_SENT_NAMES[id]??id} ${Math.round(v.ws??0)}km/h ${v.cloudPct!=null?v.cloudPct+'% nubi':'—'}`);
+    if(parts.length)metarSentLine=`METAR SENTINELLE (cross-check): ${parts.join(' · ')}`;
+  }
+  return[
+`TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa} hPa) — valvola ${now.tropo.valve}`:'N/D'}`,
+`CAPE: ${now.cape} J/kg | LI: ${now.li.toFixed(1)} K | CIN: ${ci} J/kg${cr&&ci<50?' ⚠ FRAGILE':''} | VIL: ${now.vil} kg/m²`,
+`JET 250hPa: ${Math.round(now.ws250)} km/h da ${Math.round(now.wd250)}°`,
+`ISOZERO: ${Math.round(now.freezing)} m | PBL: ${Math.round(now.blh)} m | H₂O col.: ${now.wv?.toFixed(1)} kg/m²`,
+'',
+'PROFILO VERTICALE:',
+`  300hPa T ${now.t300?.toFixed(1)}°C Z ${Math.round(now.z300)}m`,
+`  250hPa T ${now.t250?.toFixed(1)}°C Z ${Math.round(now.z250)}m`,
+`  200hPa T ${now.t200?.toFixed(1)}°C Z ${Math.round(now.z200)}m`,
+'',
+`SUPERFICIE: T ${now.t2m.toFixed(1)}°C${now.t2m>T_MED+T_DELTA?' ⚠ CALDO ESTREMO':now.t2m<T_MED-T_DELTA?' ⚠ FREDDO ESTREMO':''} | Dp ${now.dp.toFixed(1)}°C | RH ${now.rh}%`,
+`VENTO: ${Math.round(now.ws)} km/h da ${Math.round(now.wd)}° (raffiche ${Math.round(now.gusts)} km/h) | Nubi: ${now.cloud}%`,
+threshLine,cLine,fLine,
+'',
+`MARE: SST ${sst!=null?sst+'°C'+(sst>SST_TH?' ⚠ SOPRA SOGLIA':''):'N/D'}`,
+m?`Hs ${m.wH.toFixed(2)}m | T ${m.wP.toFixed(1)}s | Swell ${m.sH.toFixed(2)}m`:'Sea state N/D',
+fl,
+'',
+sentLine,
+farLine,
+metarSentLine,
+  ].filter(l=>l!==null).join('\n');
+}
+
+function bfSectAria(){
+  const aq=STATE.aq;if(!aq?.hourly?.time)return null;
+  const h=aq.hourly,now=new Date(),idx=h.time.findIndex(t=>new Date(t)>=now),i=idx>=0?idx:0;
+  const aqi=h.european_aqi?.[i]??null,al=aqiLv(aqi);
+  const lines=[`AQI europeo: ${aqi!=null?Math.round(aqi):'N/D'} — ${al.l}${al.d&&al.d!=='—'?' ('+al.d+')':''}`];
+  const parts=[];
+  if(h.pm2_5?.[i]!=null)parts.push(`PM2.5 ${h.pm2_5[i].toFixed(1)}`);
+  if(h.pm10?.[i]!=null)parts.push(`PM10 ${h.pm10[i].toFixed(1)}`);
+  if(h.nitrogen_dioxide?.[i]!=null)parts.push(`NO2 ${h.nitrogen_dioxide[i].toFixed(1)}`);
+  if(h.ozone?.[i]!=null)parts.push(`O3 ${h.ozone[i].toFixed(1)}`);
+  if(parts.length)lines.push(parts.join(' · ')+' µg/m³');
+  // Polvere sahariana — stessa logica di conferma via sentinella Algeri già
+  // usata in renderAria(): il trasporto è dichiarato solo se il vento sulla
+  // sentinella è meridionale, altrimenti è "modello, non confermato".
+  const dust=h.dust?.[i]??0;
+  if(dust>50){
+    const alSent=STATE.farSents?.find(s=>s.id==='al');
+    const alWd=alSent?.wd??null;
+    const southerly=alWd==null||(alWd>=135&&alWd<=315);
+    lines.push(southerly
+      ?`🏜 Polvere sahariana ${dust.toFixed(0)}µg/m³ — trasporto CONFERMATO (Algeri ${wdL(alWd)})`
+      :`🏜 Polvere sahariana ${dust.toFixed(0)}µg/m³ (modello) — trasporto NON confermato (Algeri ${wdL(alWd)}, non meridionale)`);
+  }
+  return lines.join('\n');
+}
+
+function bfSectSole(hrs){
+  const now=hrs[0];if(!now)return null;
+  const today=new Date(),sun=calcSunTimes(today);
+  const nowHour=today.getHours()+today.getMinutes()/60;
+  const isDay=sun.isDaylight(nowHour);
+  const uvN=now.uv??null,ul=uvLv(isDay?uvN:0);
+  const uvLine=isDay?`UV: ${uvN!=null?uvN.toFixed(1):'N/D'} — ${ul.l}${ul.rec&&ul.rec!=='—'?' ('+ul.rec+')':''}`:'UV: ore notturne/crepuscolo — non applicabile';
+  return`${uvLine}\n🌅 Alba ${hToStr(sun.sunrise)} · 🌇 Tramonto ${hToStr(sun.sunset)} · ☀ Mezzogiorno solare ${hToStr(sun.noon)}`;
+}
+
+function bfSectEstremiInCorso(hrs,sst,risk){
+  const now=hrs[0];
+  const obsDry=isObsConfirmedDry();
+  const sec=assessSecondo(now,sst,obsDry);
+  const ext=calcExt48H(hrs,sst,STATE.farSents,STATE.farSwell);
+  const lines=[`SECONDO AVVISO (composito): ${LVL[sec.lv]}${sec.obsCapped?' (calmierato da osservazione diretta radar/METAR)':''}`];
+  if(ext.eventInProgress){
+    lines.push(`🌧 EVENTO IN CORSO — ${ext.trajectory.status} (${ext.nowPrecMm.toFixed(1)}mm/h misurati)`);
+    lines.push(ext.trajectory.etaHours!=null?`Stima esaurimento/scarico energia: ~${ext.trajectory.etaHours}h`:'Durata non determinabile nelle prossime 12h — monitorare');
+  }else{
+    lines.push(`Nessun evento in corso (precipitazione misurata ${(ext.nowPrecMm??0).toFixed(1)}mm/h, sotto soglia 2mm/h)`);
+  }
+  return lines.join('\n');
+}
+
+function bfSectPrevAltaRisoluzione(hrs,pd){
+  const{f8_capeMax:mxC,f8_liMin:mnL,f8_precMax:mxP}=get8hWindow(hrs);
+  const lines=[`MAX PROSSIME 8H: CAPE ${mxC} J/kg | LI ${mnL.toFixed(1)} K | Prec ${mxP}%`];
+  // Tabella oraria compatta — STESSA fonte di calcHourlyRisk() usata dalla
+  // tabella in UI (nessuna quarta copia della logica): idx 0-7 confidenza
+  // alta, idx 8 (+8h) confidenza ridotta, marcata con "±".
+  const rows=hrs.slice(0,9).map((h,idx)=>{
+    const{pcH,pfH}=calcHourlyRisk(h,idx,pd);
+    return`  ${h.label}${idx>=8?'±':' '} C${h.cape} LI${h.li.toFixed(1)} · 💧💧💧${pcH}% 💧${pfH}%`;
+  });
+  lines.push(...rows);
+  return lines.join('\n');
+}
+
+function bfSectPrevAria(){
+  const aqHrs=STATE.aq?._hrs??[];
+  if(!aqHrs.length)return'Previsione qualità aria non disponibile.';
+  const aqi8=aqHrs.slice(0,8).map(a=>a.aqi??0);
+  const maxAqi=Math.max(...aqi8);
+  const aqiLabels={1:'Buona',2:'Discreta',3:'Moderata',4:'Scarsa',5:'Molto scarsa'};
+  const lbl=aqiLabels[Math.round(maxAqi)]??'—';
+  // Nota scala: qui WHO 1-5 (previsionale CAMS), diverso dall'AQI europeo
+  // 0-100+ usato nella constatazione "adesso" — scale diverse, entrambe
+  // reali, etichettate per non farle sembrare lo stesso numero.
+  return`Indice max previsto (scala WHO 1-5): ${maxAqi.toFixed(1)} — ${lbl}${maxAqi>=4?' ⚠ Evitare sforzi fisici prolungati all\'aperto':maxAqi>=3?' — cautela per soggetti sensibili':''}`;
+}
+
+function bfSectPrevSole(hrs){
+  const sun=calcSunTimes(new Date());
+  const next8=hrs.slice(0,9);
+  const maxUv8=Math.max(...next8.map(h=>{
+    const hTime=h.time instanceof Date?h.time:new Date(h.time??Date.now());
+    return sun.isDaylight(hTime.getHours()+hTime.getMinutes()/60)?h.uv??0:0;
+  }));
+  if(maxUv8<=0)return'Nessuna esposizione solare significativa nelle prossime 8h.';
+  const uvPeak=next8.reduce((best,h)=>{
+    const hTime=h.time instanceof Date?h.time:new Date(h.time??Date.now());
+    if(!sun.isDaylight(hTime.getHours()+hTime.getMinutes()/60))return best;
+    return(h.uv??0)>=(best?.uv??0)?h:best;
+  },null);
+  const lPeak=uvLv(maxUv8);
+  return`UV massimo previsto: ${maxUv8.toFixed(1)} — ${lPeak.l} (picco alle ${uvPeak?.label??'—'})`;
+}
+
+function bfSectPredizione48h(hrs,sst){
+  const ext=calcExt48H(hrs,sst,STATE.farSents,STATE.farSwell);
+  const lines=[`LIVELLO: ${ext.icon} ${ext.level} — probabilità massima ${ext.maxP}%`];
+  lines.push(...ext.events.map(e=>`  ${e.ev}: ${e.p}% (${e.dr})`));
+  return lines.join('\n');
+}
+
+function makeBf(hrs,sst,marHrs,risk,lastUpdate,flood,nearSents,pd){
+  const now=hrs[0];if(!now)return'Dati non caricati.';
+  const ts=lastUpdate?lastUpdate.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'—';
+  const tz=new Date().getTimezoneOffset()<=-120?'CEST':'CET';
+  // FIX Belardo_v9.9beta1 (round 4, invariato): la riga "Fonte:" si costruisce
+  // solo dalle fonti realmente disponibili in questo run — ora che il corpo
+  // sotto contiene davvero le sezioni Aria/Sole/Sentinelle lontane/METAR,
+  // questa riga e il contenuto sono finalmente allineati.
+  const srcParts=['Open-Meteo best_match','SST Marine API','GloFAS Flood API'];
+  if(STATE.metarData?.primary)srcParts.push(`METAR ${STATE.metarData.primary.station??'LIRM'} (osservazione)`);
+  if(STATE.radarStatus)srcParts.push(`Radar ${STATE.radarStatus.source} (osservazione)`);
+  if(STATE.eumetsat?.ok>0)srcParts.push(`EUMETSAT MTG (satellite, ${STATE.eumetsat.ok}/3)`);
+  if(STATE.aq)srcParts.push('CAMS Aria');
+  if((nearSents?.length??0)>0||(STATE.farSents?.length??0)>0)srcParts.push('Rete sentinelle GFS/ICON');
+
+  const sole=bfSectSole(hrs),aria=bfSectAria();
+  const risultato=[
+`📡 BRIEFING NOWCASTING CV — ${new Date().toLocaleDateString('it-IT')} ${ts} ${tz} · ${APP_VERSION}`,
+`Fonte: ${srcParts.join(' · ')}`,
+'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+'',
+'① CONSTATAZIONE METEO',
+bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd),
+'',
+'② CONSTATAZIONE QUALITÀ ARIA',
+aria??'Dati aria non disponibili in questo run.',
+'',
+'③ CONSTATAZIONE QUALITÀ SOLE',
+sole??'Dati sole non disponibili in questo run.',
+'',
+'④ EVENTI ESTREMI IN CORSO',
+bfSectEstremiInCorso(hrs,sst,risk),
+'',
+`⑤ PREVISIONE METEO ALTA RISOLUZIONE — RISCHIO: ${
+    pd.futureConv && (risk?.score??0) <= 3
+      ? '🟡 ' + (risk?.level??'BASSO') + ' — potenziale cedimento oltre finestra 8h (score ' + (risk?.score??0) + '/10 ora)'
+      : (risk?.icon??'') + ' ' + (risk?.level??'') + ' (score ' + (risk?.score??0) + '/10)'
+  }`,
+risk?.reasons?.join(' | ')??'',
+bfSectPrevAltaRisoluzione(hrs,pd),
+'',
+'⑥ PREVISIONE QUALITÀ ARIA (prossime 8h)',
+bfSectPrevAria(),
+'',
+'⑦ PREVISIONE QUALITÀ SOLE (prossime 8h)',
+bfSectPrevSole(hrs),
+'',
+'⑧ PREDIZIONE EVENTI ESTREMI OLTRE 48H',
+bfSectPredizione48h(hrs,sst),
+'',
+'━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+'→ procedi',
+  ];
+  return risultato.join('\n');
+}
+
+// ── RENDER PRINCIPALE ──
+// ── CALCOLO ORARIO CONDIVISO (Belardo_v9.9beta1, round 7) ─────────────────
+// Prima questo calcolo (pcH/pfH per ogni ora) viveva SOLO dentro il loop di
+// rendering di hoursRows, intrecciato con la costruzione dell'HTML dei
+// badge — la stessa identica logica già duplicata due volte (calcPD, poi
+// qui) prima dei fix round 5/6. Estraendo qui la sola parte numerica, sia
+// la tabella oraria sia il briefing testuale (makeBf, sezione "previsione
+// alta risoluzione") leggono la STESSA fonte di verità invece di una quarta
+// copia indipendente — esattamente il tipo di duplicazione che va escluso
+// prima di innestare la griglia zone-sorgenti.
+// NOTA correttiva: questa funzione era stata inserita per errore DENTRO
+// renderAll() nel primo tentativo del round 7 — una function declaration
+// annidata è visibile solo dentro quella funzione, quindi makeBf() (una
+// funzione sorella, non annidata) non riusciva a vederla
+// (ReferenceError: calcHourlyRisk is not defined), scoperto e corretto in
+// fase di test prima della pubblicazione. Deve restare qui, a livello
+// globale, allo stesso livello di calcPD/assessRisk/assessSecondo.
+function calcHourlyRisk(h,idx,pd){
+  const tkH=(h.tropo?.z??13000)/1000,vilH=h.vil??0;
+  const _hst=getST(),tkM=tkH*1000;
+  const lgH=isLoadedGun(h); // PATCH v8.10: deroga per-ora, coerente con pC/assessRisk
+  let pcH=0;
+  if(tkM<_hst.intermLo){pcH=Math.min(95,Math.round((tkM<_hst.open?20:tkM<_hst.intermLo*1.1?10:5)+(h.cape>1000?30:h.cape>300?15:h.cape>50?8:0)+(h.li<-5?20:h.li<-2?12:h.li<0?6:0)+((h.cape>50||h.li<0)&&Math.abs(h.cin)<50?12:0)));if(vilH===0&&!lgH)pcH=Math.min(pcH,25);}
+  // FIX Belardo_v9.9beta1 (round 6) — BUCO ZONA INTERMEDIA, TERZA COPIA:
+  // la fascia INTERMEDIA (intermLo<=tkM<closed) restava senza ramo, pcH=0
+  // muto per ogni ora in quella fascia. Stessi pesi dimezzati e stesso gate
+  // a trigger reale di calcPD — qui non esiste un gate osservativo (non c'è
+  // METAR/radar del futuro), per cui l'unica difesa da falso positivo è il
+  // trigger meccanico stesso: in un'economia costiera-turistica un piccolo
+  // falso negativo pesa meno di un grande falso positivo.
+  else if(tkM<_hst.closed){
+    const hasTrigH=(h.ws250??0)>=60||((h.wd250??-1)>=150&&(h.wd250??-1)<=250)||vilH>=_hst.vilMin;
+    if(hasTrigH){
+      pcH=Math.min(95,Math.round((h.cape>1000?15:h.cape>300?10:h.cape>50?5:0)+(h.li<-5?12:h.li<-2?8:h.li<0?4:0)+((h.cape>50||h.li<0)&&Math.abs(h.cin)<50?8:0)));
+    }else if(h.cape>1000){
+      pcH=5; // energia presente, nessun innesco meccanico osservabile: non muto, tetto basso
+    }
+  }
+  if(tkM>=_hst.closed)pcH=lgH?Math.max(pcH,40):0;
+  // FIX Belardo_v9.9beta1 (round 6) — COERENZA SINTESI/DETTAGLIO: la riga
+  // idx===0 rappresenta la STESSA ora di "now" usata da pC/assessRisk/
+  // assessSecondo — è l'unica riga per cui esiste un'osservazione reale
+  // (radar+METAR). Le ore 1-8 sono pura proiezione di modello: nessuna
+  // osservazione futura esiste, quindi qui NON si applica alcun gate.
+  if(idx===0&&isObsConfirmedDry()){
+    const capH=lgH?40:12;
+    if(pcH>capH)pcH=capH;
+  }
+  let pfH=Math.min(90,Math.round(Math.max(0,h.precProb-pcH*0.5)));
+  pfH=Math.min(pfH,pd.front);
+  if(pd.isFronteSterile)pfH=0;
+  const isTropoClosed=tkM>=_hst.closed;
+  const cinNowH=Math.abs(h.cin??0);
+  const isLookAheadHour=pd.futureConv&&isTropoClosed&&h.cape>100&&h.li<0;
+  return{pcH,pfH,isTropoClosed,lgH,isLookAheadHour,cinNowH};
+}
+function renderAll(){
+  const{hrs,sst,marHrs,risk,lastUpdate,flood,aq,nearSents,farSents,farSwell}=STATE;
+  const now=hrs[0];if(!now)return;
+  const nowPrecProb=now.precProb??0;
+  document.getElementById('ts').textContent=`Aggiornato: ${lastUpdate.toLocaleString('it-IT')}`;
+  const f8=get8hWindow(hrs);
+  const pd=calcPD(hrs,sst,nearSents);
+  // v9.9beta: aggancio radar reale — pd.radarConfirmedDry/Wet derivano da
+  // STATE.radarStatus (fetchRealRadar in loadAll). Se il radar non ha
+  // risposto (STATE.radarStatus===null), entrambi restano false: calcWx()
+  // si comporta esattamente come prima, nessuna nuova dipendenza rigida.
+  pd.radarConfirmedDry = STATE.radarStatus!=null && STATE.radarStatus.hasEcho===false;
+  pd.radarConfirmedWet = STATE.radarStatus!=null && STATE.radarStatus.hasEcho===true;
+  // FIX Belardo_v9.9beta1 (round 5) — GATE OSSERVATIVO SU pC (Convettiva): prima
+  // radarConfirmedDry veniva applicato SOLO a pd.front (radarVetoFrontCard,
+  // radarVetoPioggia) e alle etichette testuali di calcWx — mai al numero
+  // pd.conv mostrato nella card "Convettiva 8h". Un cielo confermato sereno
+  // da radar+METAR non poteva quindi mai abbassare un pC alto generato da
+  // CAPE/LI da soli. Stessa gerarchia già in uso altrove nel pannello
+  // (osservazione Livello 1 > proxy del modello): qui il tetto è
+  // deliberatamente ASIMMETRICO — abbassa sempre pC quando c'è conferma di
+  // cielo asciutto/sereno, non lo alza mai. Se loadedGunNow è attivo (CAPE
+  // estremo >2500, energia genuinamente fuori scala) il tetto resta più
+  // permissivo (40, la stessa base della deroga) invece di essere azzerato,
+  // perché quell'energia va comunque segnalata anche a cielo sereno adesso.
+  pd.obsConfirmedDry = isObsConfirmedDry();
+  if(pd.obsConfirmedDry){
+    const convCap = pd.loadedGunNow ? 40 : 12;
+    if(pd.conv>convCap){pd._convPreObsCap=pd.conv;pd.conv=convCap;}
+  }
+
+  // ── PREVISIONE ──
+  const wx=calcWx(pd,f8,now);
+  const wxCard=document.getElementById('wxCard');
+  wxCard.style.cssText=`border-radius:12px;padding:18px 20px;margin-bottom:12px;text-align:center;background:${wx.color}10;border:1.5px solid ${wx.color}44;`;
+  document.getElementById('wxIcon').textContent=wx.icon;
+  document.getElementById('wxLabel').textContent=wx.label;document.getElementById('wxLabel').style.color=wx.color;
+  document.getElementById('wxSub').textContent=wx.sub;document.getElementById('wxSub').style.color=wx.color;
+  const tkm=(now.tropo?.z??13000)/1000;
+  const setP=(pEl,dEl,drEl,pct,desc,col,conv)=>{
+    const pe=document.getElementById(pEl);if(pe){pe.textContent=pct+'%';pe.style.color=col;}
+    const de=document.getElementById(dEl);if(de){de.textContent=desc;de.style.color=col;}
+    const dre=document.getElementById(drEl);if(dre){dre.innerHTML=`<span style="color:${col}">${conv?'💧💧💧':'💧'}</span>`;dre.style.opacity=pct<1?'0.3':'1';}
+  };
+  const _rnd=getST();
+  const lgNow=isLoadedGun(now);
+  // v8.7.1: cDesc coerente con futureConv
+  // v8.10: cDesc coerente anche con la deroga loaded-gun — se attiva, il
+  // messaggio deve dire "energia confermata", non "soppressa", altrimenti
+  // contraddice il valore numerico pd.conv (che ora può essere 40%).
+  const cDesc=(now.tropo?.z??0)>=_rnd.closed
+    ? (lgNow
+        ? `⚡ Energia estrema (CAPE ${now.cape} J/kg, LI ${now.li.toFixed(1)}K) supera parzialmente il blocco tropo ${tkm.toFixed(1)} km — CIN ${Math.abs(Math.round(now.cin??0))} J/kg non completamente sigillante`
+        : pd.futureConv
+        ? `Rischio futuro — tropo ${tkm.toFixed(1)} km · CIN ${Math.abs(Math.round(now.cin??0))} J/kg tappo · cedimento atteso`
+        : `Soppressa — tropo ${tkm.toFixed(1)} km (valvola chiusa · soglia ${(_rnd.closed/1000).toFixed(1)}km)`)
+    : pd.maxVil===0
+      ? `Basso — VIL=0 (energia non espressa)`
+      : `Rischio reale — tropo ${tkm.toFixed(1)} km`;
+  // v8.3: quando sentOnlySignal, la card frontale mostra avviso qualitativo
+  // senza percentuale inflazionata — allineata alla tabella oraria (0%)
+  // FIX Belardo_v9.9beta1 (FIX-2): radarVetoPioggia sopprimeva le label
+  // testuali in calcWx (banner in alto) ma non la card numerica FRONTALE,
+  // che poteva mostrare una percentuale allarmante ("Sistema frontale in
+  // avvicinamento") in contraddizione diretta con la card radar poco sotto
+  // che confermava cielo asciutto sulle stesse coordinate. Stessa gerarchia
+  // osservazione>previsione già in uso per METAR e per il banner: se il
+  // radar conferma asciutto, il numero e il sottotitolo lo riflettono.
+  const radarVetoFrontCard = pd.radarConfirmedDry===true;
+  const fDesc=radarVetoFrontCard
+    ?`✓ Radar/satellite confermano asciutto — segnale modello non osservato sul campo`
+    :pd.isFronteSterile
+    ?`Segnale frontale smorzato — fronte sterile (nessuna precip. sulle sentinelle)`
+    :pd.frontInProgress
+    ?`Fronte attivo — H₂O ${now.wv?.toFixed(1)} kg/m² · VIL ${now.vil} · modello NWP in ritardo`
+    :pd.sentOnlySignal
+    ?'⚠ Sentinelle O-SO attive — modello 0% nelle 8h · vento ≠ pioggia'
+    :pd.isFronteSterile?`Segnale frontale smorzato — fronte sterile (nessuna precip. sulle sentinelle)`
+    :pd.front>=50?'Sistema frontale in avvicinamento — pioggia diffusa attesa'
+    :pd.front>=20?'Fronte possibile — pioggia debole-moderata'
+    :pd.front>=5?'Probabilità bassa':'Assente';
+  const fPct=radarVetoFrontCard?0:(pd.sentOnlySignal&&!pd.frontInProgress)||pd.isFronteSterile?0:pd.front;
+  setP('pd-c-pct','pd-c-desc','pd-c-dr',pd.conv,cDesc,pd.cc,true);
+  setP('pd-f-pct','pd-f-desc','pd-f-dr',fPct,fDesc,pd.fc,false);
+  // Volturno
+  if(flood?.daily?.time){
+    const td=new Date().toISOString().slice(0,10),ti=flood.daily.time.findIndex(t=>t>=td);
+    const qa=flood.daily.river_discharge_median??flood.daily.river_discharge,qt=ti>=0?qa?.[ti]:null,col=fCol(qt);
+    const rr=document.getElementById('riverRow');rr.style.cssText=`display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;margin-bottom:12px;background:${col}0a;border:1px solid ${col}33;`;
+    document.getElementById('rcVal').textContent=qt!=null?`${Math.round(qt)} m³/s`:'N/D';document.getElementById('rcVal').style.color=col;
+    document.getElementById('rcSub').textContent=qt!=null?fLbl(qt):'—';document.getElementById('rcSub').style.color=col;
+    document.getElementById('rcIcon').textContent=qt>1000?'🔴':qt>500?'🟠':qt>150?'🟡':'🟢';
+  }
+  document.getElementById('bfText').textContent=makeBf(hrs,sst,marHrs,risk,lastUpdate,flood,nearSents,pd);
+  // ── ARIA & SOLE ──
+  if(aq)renderAria(aq);renderSole(hrs);
+  // ── INDICI ──
+  renderDoppio(now,sst);
+  // v8.7.2: hoursRows coerente con look-ahead futureConv
+  // v8.7.3: hoursRows coerente anche con segnale frontale (sentOnly / Path B)
+document.getElementById('hoursRows').innerHTML=hrs.slice(0,9).map((h,idx)=>{
+    const{pcH,pfH,isTropoClosed,lgH,isLookAheadHour,cinNowH}=calcHourlyRisk(h,idx,pd);
+    const cc2=pcH>=60?'#ef4444':pcH>=25?'#f97316':pcH>=10?'#eab308':'#22c55e';
+    const fc2=pfH>=60?'#ef4444':pfH>=35?'#f97316':pfH>=15?'#60a5fa':'#22c55e';
+    let cs;
+    if(isTropoClosed&&lgH){
+      // PATCH v8.10: distinta dalla card "tappo" — qui l'energia è già
+      // CONFERMATA (CAPE>2500/LI<0/CIN<400), non solo in attesa di cedimento
+      // futuro come nel ramo futureConv qui sotto.
+      cs=`<span style="color:#ef4444;font-size:9px">💧💧💧 <b style="color:#ef4444">${pcH}%</b> <b style="color:#ef4444">⚡energia</b></span>`;
+    }else if(isTropoClosed&&isLookAheadHour){
+      // Energia presente, tappo CIN ancora attivo — coerente col 25% look-ahead
+      const cinCol=cinNowH<80?'#f97316':cinNowH<150?'#eab308':'#60a5fa';
+      cs=`<span style="color:#f97316;font-size:9px">💧💧💧 <b style="color:#f97316">${pcH}%</b> <b style="color:#ef4444">tappo</b> <span style="color:${cinCol};font-size:8px">CIN${cinNowH}</span></span>`;
+    }else if(isTropoClosed){
+      cs=`<span style="color:#22c55e;font-size:9px">💧💧💧 <b style="color:#22c55e">0%</b></span>`;
+    }else{
+      cs=`<span style="color:${cc2}">💧💧💧 <b style="color:${cc2}">${pcH}%</b></span>`;
+    }
+
+    // ── FRONTALE badge ───────────────────────────────────────────
+    // pfH=0 ma pd.front>0: il segnale frontale viene da sentinelle o Path B,
+    // non dal modello NWP → la tabella deve spiegarlo, non mostrare solo 0%.
+    //
+    // Tre casi distinti:
+    //   sentOnly  → segnale cinematico (vento O-SO) · il modello non vede pioggia
+    //   Path B    → H₂O alta + nubi · modello in ritardo o fronte sottile
+    //   normale   → pfH calcolato normalmente dal modello
+    let fs;
+    // FIX Belardo_v9.9beta1 (FIX-5): frontSignalPresent usava pd.front grezzo
+    // (pre-veto), quindi ogni riga della tabella 8H mostrava 🌬sentinel/〰fronte?
+    // anche quando radarConfirmedDry===true e la card sopra + il briefing
+    // dicevano già "radar/satellite confermano asciutto" — terzo punto di
+    // rendering non coperto da FIX-2. Ora il veto silenzia anche qui.
+    const radarVetoHourly = pd.radarConfirmedDry===true;
+    const frontSignalPresent = !radarVetoHourly && pd.front >= 15 && pfH === 0 && !pd.frontInProgress;
+    if(radarVetoHourly){
+      fs=`<span style="color:#22c55e;font-size:9px">💧 <b style="color:#22c55e">0%</b> <b style="color:#22c55e">✓asciutto</b></span>`;
+    }else if(frontSignalPresent && pd.sentOnlySignal){
+      // Sentinelle tirreniche attive, modello 0% — segnale cinematico puro.
+      // FIX: la percentuale (pfH) è sempre mostrata; sentinel la affianca, non la sostituisce.
+      fs=`<span style="color:#f97316;font-size:9px">💧 <b style="color:#22c55e">${pfH}%</b> <b style="color:#f97316">🌬sentinel</b></span>`;
+    }else if(frontSignalPresent){
+      // Path B: H₂O/nubi suggeriscono fronte ma modello non conferma ancora.
+      // FIX: percentuale sempre presente; indicatore fronte? affiancato.
+      fs=`<span style="color:#60a5fa;font-size:9px">💧 <b style="color:#22c55e">${pfH}%</b> <b style="color:#60a5fa">〰fronte?</b></span>`;
+    }else{
+      fs=`<span style="color:${fc2}">💧 <b style="color:${fc2}">${pfH}%</b></span>`;
+    }
+
+    return`<div class="hours-row${idx>=8?' conf-low':''}"><span class="hours-time">${h.label}${idx>=8?'<span class="conf-tag">±</span>':''}</span><span class="hours-vals"><span style="color:${capeCol(h.cape)}">C ${h.cape}</span><span style="color:${liCol(h.li)}">LI ${h.li.toFixed(1)}</span><span style="color:#60a5fa">CIN ${Math.abs(Math.round(h.cin))}</span><span style="color:#a78bfa">VIL ${h.vil}</span><span style="color:${h.tropo?.color??'#4a7fa0'}">${h.tropo?(h.tropo.z/1000).toFixed(1)+'km':'—'}${isTropoClosed&&lgH?'<span style="color:#eab308" title="valvola chiusa, deroga loaded-gun attiva">⚡</span>':''}</span><span style="color:#d8eaf8">${h.t2m.toFixed(1)}°</span>${cs} ${fs}</span></div>`;
+  }).join('');
+  // ── 48H ESTREMI ──
+  const ext=calcExt48H(hrs,sst,farSents,farSwell);
+  const banner=document.getElementById('extBanner');
+  if(ext.maxP>=60){banner.classList.add('on');banner.style.cssText=`border-radius:10px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px;background:${ext.color}12;border:1.5px solid ${ext.color};`;document.getElementById('extBTitle').textContent='⚠ ALLERTA EVENTI ESTREMI';document.getElementById('extBTitle').style.color=ext.color;document.getElementById('extBSub').textContent=ext.events.filter(e=>e.p>=60).map(e=>e.ev).join(' · ');document.getElementById('extBSub').style.color=ext.color;}else{banner.classList.remove('on');}
+  document.getElementById('erbI').textContent=ext.icon;
+  document.getElementById('erbL').textContent=ext.level;document.getElementById('erbL').style.color=ext.color;
+  document.getElementById('erbS').textContent=`Probabilità massima: ${ext.maxP}%`;
+  // PATCH v8.14: maxConsec (ore consecutive fisicamente favorevoli) era già
+  // usato internamente per pesare pRov e compariva solo nel driver testuale
+  // della riga "Precipitazione rovinosa" — indicatore di persistenza utile,
+  // promosso a riga propria nella card principale 48h Estremi.
+  const consecEl=document.getElementById('erbConsec');
+  if(consecEl){
+    consecEl.textContent=ext.maxConsec>=1?`Persistenza: ${ext.maxConsec}h consecutive favorevoli`:'Nessuna finestra favorevole consecutiva';
+    consecEl.style.color=ext.maxConsec>=6?'#f97316':ext.maxConsec>=3?'#eab308':'#3a6080';
+  }
+  document.getElementById('extRows').innerHTML=ext.events.map(e=>`<tr><td style="color:${e.c}">${e.ev}</td><td><div class="prob-wrap"><div class="prob-bar" style="width:${Math.min(e.p,100)}px;background:${e.c}"></div><span style="color:${e.c};font-weight:700">${e.p}%</span></div></td><td style="color:#3a6080;font-size:10px">${e.dr}</td></tr>`).join('');
+  // ── SCHEDA 5: CALCOLO INCROCIATO ──
+  // PATCH v8.11: rende esplicite, con numeri reali, le uniche due vie di
+  // contaminazione tra le pipeline "istantaneo" (Scheda 3) e "48h" (Scheda 4)
+  // che esistono davvero nel codice — niente stime inventate.
+  if(ext.cross){
+    const c=ext.cross,tzKm=(c.tz/1000).toFixed(2),pct=c.pRovTotal>0?Math.round(c.tzContrib/c.pRovTotal*100):0;
+    document.getElementById('crossA').innerHTML=c.tzContrib>0
+      ?`La tropopausa ISTANTANEA (Scheda 3) è ${tzKm} km — sotto soglia stagionale "${c.tz<c.tzOpen?'aperta':'intermedia'}" (${(c.tzOpen/1000).toFixed(1)}km / ${(c.tzIntermLo/1000).toFixed(1)}km).<br>
+        Contributo diretto a "Precipitazione rovinosa 48h": <b style="color:#f97316">+${c.tzContrib} punti</b> su un totale calcolato di ${c.pRovTotal}% (~${pct}% del peso totale).<br>
+        <span style="color:#1e4060;font-size:9px">Tutti gli altri fattori della Scheda 4 (CAPE max, LI min, ore consecutive favorevoli, trend tropopausa 12h, swell remoto) usano aggregati sull'intera finestra 48h — solo questo termine usa il dato dell'ora corrente.</span>`
+      :`Tropopausa istantanea ${tzKm} km — sopra entrambe le soglie stagionali: contributo diretto a "Precipitazione rovinosa 48h" = <b style="color:#22c55e">0 punti</b> in questo momento.`;
+  }
+  // PATCH v8.13: banner evento in corso — massima prominenza, è la PRIMA cosa
+  // che deve orientare chi lancia il pannello durante un evento già in atto.
+  const eventNowCard=document.getElementById('eventNowCard');
+  if(ext.eventInProgress){
+    eventNowCard.style.display='block';
+    eventNowCard.style.cssText=`display:block;border-radius:10px;padding:16px 18px;margin-bottom:12px;border:2px solid ${ext.trajectory.color};background:${ext.trajectory.color}14;`;
+    document.getElementById('eventNowLabel').innerHTML=`🌧 EVENTO IN CORSO ORA <span style="color:${ext.trajectory.color}">· ${ext.trajectory.status}</span>`;
+    // PATCH v8.14: stima durata estratta dal testo inline e resa un box a sé
+    // — è la risposta più cercata da chi lancia il pannello durante un
+    // evento in corso ("quanto durerà"), prima rischiava di perdersi in
+    // mezzo a una riga di prosa.
+    const etaBox=ext.trajectory.etaHours!=null
+      ?`<div style="display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 12px;border-radius:8px;background:${ext.trajectory.color}1a;border:1px solid ${ext.trajectory.color}55"><span style="font-size:20px">⏱</span><div><div style="font-size:9px;letter-spacing:1px;color:${ext.trajectory.color};text-transform:uppercase">Stima esaurimento</div><div style="font-size:16px;font-weight:700;color:${ext.trajectory.color}">~${ext.trajectory.etaHours}h</div></div></div>`
+      :`<div style="display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 12px;border-radius:8px;background:${ext.trajectory.color}1a;border:1px solid ${ext.trajectory.color}55"><span style="font-size:20px">⏱</span><div style="font-size:11px;color:${ext.trajectory.color}">Durata non determinabile nelle prossime 12h — monitorare</div></div>`;
+    document.getElementById('eventNowDesc').innerHTML=`Cosa hai davanti: il modello prevede precipitazione <b>${nowPrecProb}%</b> probabilità · CAPE ${now.cape} J/kg.<br><b style="font-size:9px;color:#1e4060">⚠ Dato da modello NWP, non da misura sul campo — verifica con osservazione diretta.</b>${etaBox}<span style="color:#1e4060;font-size:10px">${ext.trajectory.desc}</span>`;
+  }else{
+    eventNowCard.style.display='none';
+  }
+  document.getElementById('crossB').innerHTML=ext.eventInProgress
+    ?`⚡ COLLEGAMENTO ATTIVO ORA — evento in corso (${ext.nowPrecMm.toFixed(1)}mm/h misurati) interpretato alla luce del quadro 48h: <b style="color:${ext.trajectory.color}">${ext.trajectory.status}</b>.<br>${ext.trajectory.desc}<br>
+        <span style="color:#1e4060;font-size:9px">Questo collegamento (PATCH v8.12) nasce da un'osservazione dell'utente: prima della v8.12 il dato di precipitazione effettiva (h.prec) veniva estratto dall'API ma mai utilizzato — il pannello era puramente prognostico, senza un rilevatore diagnostico di "sta già succedendo ORA". Vedi assessEventTrajectory in calcExt48H.</span>`
+    :`Nessun evento è in corso in questo momento (precipitazione misurata ${(ext.nowPrecMm??0).toFixed(1)}mm/h, sotto soglia 2mm/h) — il collegamento 48h→istantaneo descritto sopra si attiva solo quando un episodio è effettivamente in scarica al lancio del pannello.<br>
+        <span style="color:#1e4060;font-size:9px">Al di fuori di questo caso, nessuna metrica aggregata sui 48h entra nelle percentuali di Scheda 1 — il look-ahead di pC guarda solo le prossime 4h, già dentro l'orizzonte 8-12h.</span>`;
+  renderFarSentinels(farSents,farSwell);
+  document.getElementById('tropoDisp').innerHTML=now.tropo?(()=>{
+    const t=now.tropo,kmStr=(t.z/1000).toFixed(2);
+    const valveDesc=t.isStratIntrusion?'⚡ Forzante dinamica — CAPE soppresso localmente ma PV alta':t.valve==='APERTA'?'⚠ Convezione esplosiva possibile.':t.valve==='CHIUSA'?(isLoadedGun(now)?'⚡ Valvola chiusa ma deroga CAPE-estremo attiva — energia parzialmente accessibile, non comparto stagno.':'✓ Comparti stagni — nessuna convezione significativa.'):'⚡ Zona intermedia — valvola in apertura · previsione 8h valida.';
+    const stratHtml=t.isStratIntrusion?`<div style="font-size:10px;color:#9333ea;margin-top:8px;padding:6px 10px;border:1px solid #9333ea55;border-radius:6px;background:#9333ea0a;line-height:1.7">${t.stratNote}</div>`:'';
+    const devSign=t.deviation>0?'+':'';
+    const fStr=t.convFactor!=null?` · f=${t.convFactor.toFixed(2)}`:'';
+    const devHtml=t.seasonalMean?`<div style="font-size:9px;color:#2a5068;margin-top:6px;line-height:1.7">Scost. stagionale: ${devSign}${t.deviation}m · Media mese: ${t.seasonalMean}m${fStr}</div><div style="font-size:9px;color:#1e4060;margin-top:2px">Gradiente 250→200 hPa: ${t.vertGrad!=null?t.vertGrad+' K/km':'N/D'}</div>`:'';
+    // v8.2: TropoTrend nel pannello Indici — calcolato qui con condizionamento LI/CAPE futuro
+    const tT0=hrs[0]?.tropo?.z??t.z;
+    const tTFut=hrs[Math.min(12,hrs.length-1)];
+    const tT12=tTFut?.tropo?.z??tT0;
+    const ttDelta=tT12-tT0;
+    const ttActive=ttDelta<0&&(( tTFut?.li??5)<0||(tTFut?.cape??0)>50);
+    const ttColor=ttActive&&ttDelta<-1500?'#f97316':ttActive&&ttDelta<-800?'#eab308':'#2a5068';
+    const ttSign=ttDelta>0?'+':'';
+    const ttNote=ttActive&&ttDelta<-1500?'⚠ Cedimento rapido con instab. futura confermata':ttActive&&ttDelta<-800?'▲ Calo significativo con instab. futura':ttDelta<0&&!ttActive?'Calo diurno NWP (ciclo radiativo — non attivo)':ttDelta>0?'Tropo in risalita — stabilizzazione':'Stazionaria';
+    const ttHtml=`<div style="font-size:9px;color:${ttColor};margin-top:4px;line-height:1.7">TropoTrend 12h: ${ttSign}${Math.round(ttDelta)}m — ${ttNote}</div>`;
+    return`<div class="tropo-val" style="color:${t.color}">${kmStr} km</div><div class="tropo-sub" style="color:${t.color}">VALVOLA ${t.valve} · ${t.hPa} hPa</div><div class="tropo-desc">${valveDesc}</div>${devHtml}${ttHtml}${stratHtml}`;
+  })():'<div style="color:#2a5068;padding:16px">N/D</div>';
+  // ── DATI ──
+  const cr2=now.cape>50||now.li<0,cf=cr2&&Math.abs(now.cin)<50,cm=cr2&&Math.abs(now.cin)>=50&&Math.abs(now.cin)<150;
+  const deltaTMini=sst!=null?(sst-(now.t2m??15)):null;
+  const sstSubMini=deltaTMini!=null?(deltaTMini>3?`⚠ ΔT +${deltaTMini.toFixed(1)}°C destab.`:deltaTMini>1?`ΔT +${deltaTMini.toFixed(1)}°C`:deltaTMini<=0?`ΔT ${deltaTMini.toFixed(1)}°C stab.`:'sopra soglia'):'—';
+  document.getElementById('miniCards').innerHTML=[{l:'TROPOPAUSA',v:now.tropo?`${(now.tropo.z/1000).toFixed(1)} km`:'N/D',s:now.tropo?.valve??'—',c:now.tropo?.color??'#4a7fa0'},{l:'CAPE',v:`${now.cape} J/kg`,s:now.cape>1000?'ALTO':now.cape>300?'MOD':'BASSO',c:capeCol(now.cape)},{l:'LIFTED INDEX',v:`${now.li.toFixed(1)} K`,s:now.li<-2?'INSTABILE':now.li<0?'BORDER':'STABILE',c:liCol(now.li)},{l:'CIN',v:`${Math.abs(Math.round(now.cin))} J/kg`,s:cf?'⚠ FRAGILE':cm?'MODERATO':'OK',c:cf?'#ef4444':cm?'#eab308':'#60a5fa'},{l:'VIL proxy',v:`${now.vil} kg/m²`,s:now.vil>2?'ATTIVO':now.vil>0?'BASSO':'Zero',c:now.vil>2?'#ef4444':now.vil>0?'#eab308':'#22c55e'},{l:'SST · ΔT mare-aria',v:sst!=null?`${sst}°C`:'N/D',s:sstSubMini,c:deltaTMini!=null&&deltaTMini>3?'#ef4444':deltaTMini!=null&&deltaTMini>1?'#f97316':deltaTMini!=null&&deltaTMini<=0?'#60a5fa':sstCol(sst)}].map(d=>`<div class="icard" style="background:${d.c}12;border:1px solid ${d.c}35"><div class="card-label">${d.l}</div><div class="ival" style="color:${d.c}">${d.v}</div><div class="isub" style="color:${d.c}">${d.s}</div></div>`).join('');
+  document.getElementById('profileRows').innerHTML=[{p:'300 hPa',t:now.t300,z:now.z300},{p:'250 hPa',t:now.t250,z:now.z250},{p:'200 hPa',t:now.t200,z:now.z200},{p:'Isozero',e:`${Math.round(now.freezing).toLocaleString()} m`},{p:'PBL',e:`${Math.round(now.blh).toLocaleString()} m`},{p:'H₂O col.',e:`${now.wv?.toFixed(1)} kg/m²`}].map(l=>l.e?`<div class="row"><span style="color:#3a6080">${l.p}</span><span>${l.e}</span></div>`:`<div class="row"><span style="color:#3a6080">${l.p}</span><span>T ${l.t?.toFixed(1)}°C</span><span>Z ${Math.round(l.z).toLocaleString()}m</span></div>`).join('');
+  document.getElementById('jetRow').innerHTML=`<div class="jet-val" style="color:${now.ws250>=60?'#ef4444':'#60a5fa'}">${Math.round(now.ws250)}</div><div><div style="font-size:11px;color:#3a6080">km/h da ${Math.round(now.wd250)}°</div><div style="font-size:11px;color:${now.ws250>=60?'#ef4444':'#22c55e'};margin-top:4px">${now.ws250>=60?'⚠ JET ATTIVO':'Corrente debole'}</div></div>`;
+  const deltaT=sst!=null?(sst-(now.t2m??15)):null;
+  const deltaTStr=deltaT!=null?` · ΔT ${deltaT>0?'+':''}${deltaT.toFixed(1)}°C `:'';
+  const sstSubLabel=sst!=null?(deltaT!=null&&deltaT>3?`⚠ SOPRA SOGLIA · Destabilizzante${deltaTStr}(mare +${deltaT.toFixed(1)}°C vs aria)`:deltaT!=null&&deltaT>1?`⚠ SOPRA SOGLIA · ΔT +${deltaT.toFixed(1)}°C`:deltaT!=null&&deltaT<=0?`Stabilizzante (aria più calda del mare)`:sst>SST_TH?'⚠ SOPRA SOGLIA':'Sotto soglia'):'—';
+  document.getElementById('sstDisp').innerHTML='<div class="sst-val" style="color:'+sstCol(sst)+'">'+(sst!=null?sst+'\u00b0C':'N/D')+'</div><div class="sst-sub" style="color:'+sstCol(sst)+'">'+sstSubLabel+'</div>';
+  if(marHrs.length>0){document.getElementById('seaCard').style.display='block';document.getElementById('seaRows').innerHTML=marHrs.map(h=>`<div class="row"><span style="color:#3a6080;width:40px">${h.lb}</span><span style="color:#60a5fa">Hs ${h.wH.toFixed(2)}m</span><span style="color:#7dd3fc">T ${h.wP.toFixed(1)}s</span><span style="color:#94a3b8">Sw ${h.sH.toFixed(2)}m</span></div>`).join('');}
+  if(flood?.daily?.time){
+    document.getElementById('fiumeLabel').textContent=`🌊 VOLTURNO — GloFAS`;
+    const td=new Date().toISOString().slice(0,10),ti2=flood.daily.time.findIndex(t=>t>=td);
+    const qa2=flood.daily.river_discharge_median??flood.daily.river_discharge,qt2=ti2>=0?qa2?.[ti2]:null,col2=fCol(qt2);
+    document.getElementById('fiumeNow').innerHTML=qt2!=null?`<div style="font-size:34px;font-weight:700;color:${col2}">${Math.round(qt2)} <span style="font-size:14px">m³/s</span></div><div style="font-size:12px;color:${col2};margin-top:3px">${fLbl(qt2)}</div>`:`<div style="color:#2a5068;padding:8px">N/D</div>`;
+    document.getElementById('fiumeRows').innerHTML=flood.daily.time.map((d,i)=>{const q=qa2?.[i];if(q==null)return'';const c=fCol(q),isTd=d===td;return`<div class="row" style="${isTd?'border-left:2px solid #60c0f0;padding-left:6px':''}"><span style="color:#3a6080;width:50px;flex-shrink:0">${new Date(d+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}${isTd?' ◀':''}</span><span style="color:${c};font-weight:${isTd?700:400}">${Math.round(q)} m³/s</span><span style="color:${c};font-size:10px">${fLbl(q)}</span></div>`;}).join('');
+  }
+  renderNearSentinels(nearSents);
+  // v9.3: render METAR card (Scheda 3 — Driver Previsione)
+  const md=STATE.metarData??{primary:null,sents:{}};
+  const mp=md.primary;
+  if(mp){
+    const isFallback=mp._isFallback===true;
+    const errStr=isFallback&&md._lastError?`<div style="font-size:8px;color:#7a4a1e;margin-top:4px;font-family:monospace;overflow:auto">⚠ ${md._lastError}</div>`:'';
+    const srcLabel=isFallback
+      ?'<span style="color:#eab308;font-size:9px"> · ⚠ METAR non disponibile — dato Open-Meteo current (analisi NWP, non misura)</span>'
+      :`<span style="color:#22c55e;font-size:9px"> · ✓ METAR reale</span>`;
+    document.getElementById('metarCard').querySelector('.card-label').innerHTML=
+      `📡 OSSERVAZIONI — ${isFallback?'CV Open-Meteo current':'METAR LIRM Grazzanise'}${srcLabel}`;
+    const skyStr=mp.cloudPct===0?'☀ Cielo sereno (SKC/CLR)':mp.cloudPct<=25?`🌤 Poche nubi (${mp.cloudPct}%)`:mp.cloudPct<=62?`⛅ Nubi sparse (${mp.cloudPct}%)`:mp.cloudPct<=87?`☁ Molto nuvoloso (${mp.cloudPct}%)`:mp.ceilFt!=null?`☁ Coperto (${mp.cloudPct}%) · soffitto ${mp.ceilFt}ft`:`☁ Coperto (${mp.cloudPct}%)`;
+    const precStr=mp.rainNow?`🌧 <b style="color:#60a5fa">PIOGGIA IN ATTO</b>${mp.tsNow?' ⛈ TUONI':''}`:mp.tsNow?'⛈ TEMPORALE':'✓ Nessuna precipitazione';
+    const windStr=mp.wd!=null?`${wdL(mp.wd)} ${Math.round(mp.wd)}° · ${Math.round(mp.ws)} km/h${mp.wg>mp.ws?' (raffica '+Math.round(mp.wg)+')':''}`:' N/D';
+    const ageStr=mp.ageMin!=null?` · ${mp.ageMin<5?'<5min fa':mp.ageMin+'min fa'}`:'';
+    // cross-check vs NWP
+    const nmCloud=now.cloud??0;
+    const cloudDiv=Math.abs(mp.cloudPct-nmCloud)>40;
+    const rainDiv=mp.rainNow!==(nowPrecProb>50);
+    const divHtml=(cloudDiv||rainDiv)?`<div style="font-size:9px;color:#f97316;margin-top:6px;padding:5px 8px;border:1px solid #f9731644;border-radius:5px;background:#f9731608">⚡ DIVERGENZA METAR/NWP: ${cloudDiv?`nuvole METAR ${mp.cloudPct}% vs NWP ${nmCloud}% `:''} ${rainDiv?`pioggia METAR ${mp.rainNow?'SÌ':'NO'} vs NWP ${nowPrecProb>50?'SÌ':'NO'}`:''} — METAR ha precedenza.</div>`:'';
+    document.getElementById('metarNow').innerHTML=
+      `<div style="font-size:10px;color:#1e4060;margin-bottom:4px">LIRM Grazzanise${ageStr} · T ${mp.temp!=null?mp.temp.toFixed(1)+'°C':'N/D'} · Dp ${mp.dp!=null?mp.dp.toFixed(1)+'°C':'N/D'}</div>`+
+      `<div style="margin:3px 0">${skyStr}</div>`+
+      `<div style="margin:3px 0">${precStr}</div>`+
+      `<div style="color:#3a6080;margin:3px 0">💨 ${windStr}</div>`+
+      divHtml+
+      `<div style="font-size:9px;color:#1e4060;margin-top:5px;font-family:monospace;overflow:auto">${mp.raw}</div>`+
+      errStr;
+    // sentinelle METAR
+    const sentNames=METAR_SENT_NAMES;
+    document.getElementById('metarSents').innerHTML=Object.entries(md.sents).map(([id,s])=>{
+      if(!s)return`<div style="color:#1e4060">${sentNames[id]??id}: N/D</div>`;
+      const pr=s.rainNow?'🌧':s.cloudPct<25?'☀':'☁';
+      return`<div>${pr} <b style="color:#2a5068">${sentNames[id]??id}</b> — ${Math.round(s.ws)}km/h ${wdL(s.wd??0)} · ${s.cloudPct}% nubi${s.rainNow?' · <span style="color:#60a5fa">pioggia</span>':''}${s.ageMin!=null?' · '+s.ageMin+'min':''}`;
+    }).join('');
+  }else{
+    document.getElementById('metarNow').innerHTML='<span style="color:#1e4060">METAR LIRM non disponibile — solo NWP attivo</span>';
+    document.getElementById('metarSents').innerHTML='<span style="color:#1e4060">—</span>';
+  }
+  document.getElementById('footer').innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS Air Quality<br>Sentinelle prossime: Grazzanise · Napoli Cdch. · Ponza · C.Miseno · Fiumicino<br>Sentinelle lontane: Gibilterra · Baleari · Barcellona · Algeri · Belgrado<br>Aggiornato: ${lastUpdate.toLocaleString('it-IT')} · ${APP_VERSION}`;
+  document.title=`Nowcasting CV ${APP_VERSION} — Castel Volturno`;
+
+  // v9.9beta: card RADAR REALE — stesso pattern della card METAR sopra.
+  const radarNowEl=document.getElementById('radarNow');
+  if(radarNowEl){
+    if(STATE.radarStatus){
+      const rs=STATE.radarStatus;
+      radarNowEl.innerHTML = rs.hasEcho
+        ? `<span style="color:#eab308">⚠ Eco presente</span> — fonte: <b>${rs.source}</b>`
+        : `<span style="color:#22c55e">✓ Cielo asciutto confermato</span> — fonte: <b>${rs.source}</b>`;
+    } else {
+      radarNowEl.innerHTML = '<span style="color:#1e4060">Radar non raggiungibile in questo momento — nessun veto applicato, banner basati solo su proxy fisici</span>';
+    }
+  }
+
+  // v9.9beta: card SATELLITE EUMETSAT — solo visualizzazione, nessuna logica di punteggio.
+  const es=STATE.eumetsat;
+  const satConv=document.getElementById('satConv'), satAirmass=document.getElementById('satAirmass'),
+        satLightning=document.getElementById('satLightning'), satStatus=document.getElementById('satStatus');
+  if(es){
+    if(es.conv){satConv.src=es.conv;satConv.style.display='block';}
+    if(es.airmass){satAirmass.src=es.airmass;satAirmass.style.display='block';}
+    if(es.lightning){satLightning.src=es.lightning;satLightning.style.display='block';}
+    if(satStatus)satStatus.textContent=`${es.ok}/3 layer caricati`+(es.fail>0?` · ${es.fail} non disponibili`:'');
+  } else if(satStatus){
+    satStatus.textContent='Satellite non raggiungibile in questo momento';
+  }
+}
+
+function renderSentCard(s,showT850){
+  const ws=s.ws??0,wg=s.wg??ws,wd=s.wd;
+  const col=wg>=60?'#ef4444':wg>=35?'#f97316':wg>=20?'#eab308':'#22c55e';
+  const fl=sentFlagInfo(ws,wg,wd,s.grp,s.sPrec,s.sProb);
+  const extra=showT850&&s.t850!=null?` · T850 ${s.t850.toFixed(0)}°C`:'';
+  return`<div class="sent-card"><div class="sent-name">${s.name} · ${s.label}</div><div class="sent-wind" style="color:${col}">${s.ok?Math.round(ws)+' km/h':'N/D'}</div><div class="sent-dir" style="color:${col}">${s.ok?wdL(wd)+' '+Math.round(wd??0)+'° · raffica '+Math.round(wg)+' km/h'+extra:'—'}</div>${!showT850?`<div class="sent-flag ${fl.cls}">${fl.txt}</div>`:''}</div>`;
+}
+function renderNearSentinels(sents){
+  if(!sents?.length)return;
+  document.getElementById('sentNearNE').innerHTML=sents.filter(s=>s.grp==='ne').map(s=>renderSentCard(s,false)).join('');
+  document.getElementById('sentNearW').innerHTML=sents.filter(s=>s.grp==='w').map(s=>renderSentCard(s,false)).join('');
+}
+function renderFarSentinels(sents,swell){
+  if(!sents?.length)return;
+  const w=sents.filter(s=>s.grp==='w');
+  const ne=sents.filter(s=>s.grp==='ne');
+  document.getElementById('sentFarW').innerHTML=w.map(s=>{
+    const sw=swell?.[s.id];
+    const ws=s.ws??0,wg=s.wg??ws,col=wg>=60?'#ef4444':wg>=35?'#f97316':'#22c55e';
+    const swStr=sw?.sw!=null?` · Swell ${sw.sw.toFixed(1)}m T${sw.t?.toFixed(1)}s`:'';
+    const t850Str=s.t850!=null&&s.id==='al'?` · T850 ${s.t850.toFixed(0)}°C`:'';
+    return`<div class="sent-card"><div class="sent-name">${s.name} · ${s.label}</div><div class="sent-wind" style="color:${col}">${s.ok?Math.round(ws)+' km/h':'N/D'}</div><div class="sent-dir" style="color:${col}">${s.ok?wdL(s.wd)+' · raffica '+Math.round(wg)+' km/h'+swStr+t850Str:'—'}</div></div>`;
+  }).join('');
+  document.getElementById('sentFarNE').innerHTML=ne.map(s=>{
+    const col=s.t850!=null&&s.t850<-10?'#60a5fa':s.t850!=null&&s.t850<-5?'#eab308':'#22c55e';
+    return`<div class="sent-card"><div class="sent-name">${s.name} · ${s.label}</div><div class="sent-wind" style="color:${col}">${s.ok?Math.round(s.ws??0)+' km/h':'N/D'}</div><div class="sent-dir" style="color:#3a6080">${wdL(s.wd)} · T850 <span style="color:${col}">${s.t850?.toFixed(0)??'N/D'}°C</span> · Z500 ${s.z500?.toFixed(0)??'N/D'}m</div></div>`;
+  }).join('');
+}
+
+function renderDoppio(now,sst){
+  let km=now.tropo?(now.tropo.z/1000):null;
+  if(rsKm!==null&&km!==null){if(Math.abs(km-rsKm)>MAX_RS)km=rsKm;}else if(rsKm!==null)km=rsKm;
+  const p=assessPrimo(km),pc=LVC[p.lv]??'#2a5068';
+  document.getElementById('primoBox').style.cssText=`background:${pc}12;border:1px solid ${pc}44;border-radius:10px;padding:13px 17px;margin-bottom:12px;display:flex;align-items:center;gap:12px;`;
+  document.getElementById('primoI').textContent=LVI[p.lv]??'⚪';document.getElementById('primoL').textContent=LVL[p.lv];document.getElementById('primoL').style.color=pc;document.getElementById('primoD').textContent=p.desc;document.getElementById('primoD').style.color=pc;
+  document.getElementById('pd-om').textContent=now.tropo?(now.tropo.z/1000).toFixed(2)+' km':'N/D';
+  document.getElementById('pd-rs').textContent=rsKm!==null?`${rsKm.toFixed(2)} km (${document.getElementById('rsRun').value})`:'N/D (manuale)';
+  const rn=document.getElementById('rsNote');
+  if(rsKm!==null&&now.tropo){const ok=now.tropo.z/1000,d=Math.abs(ok-rsKm);rn.style.display='block';rn.className=`rs-note ${d>MAX_RS?'warn':'ok'}`;rn.textContent=d>MAX_RS?`⚠ DISCORDANTI OM ${ok.toFixed(2)} vs RS ${rsKm.toFixed(2)} km (Δ=${d.toFixed(2)})`:`✓ COERENTI Δ=${d.toFixed(2)} km`;document.getElementById('pd-coe').textContent=d>MAX_RS?`⚠ Δ=${d.toFixed(2)}km`:`✓ Δ=${d.toFixed(2)}km`;}else{rn.style.display='none';document.getElementById('pd-coe').textContent='—';}
+  // FIX Belardo_v9.9beta1 (round 5): renderDoppio() è chiamata anche da onRsChange()
+  // fuori dal ciclo di renderAll() — usa isObsConfirmedDry() centralizzato
+  // (legge STATE, popolato dall'ultimo render completato) invece di una
+  // copia locale della condizione.
+  const s=assessSecondo(now,STATE.sst,isObsConfirmedDry());
+  if(s){const sc=LVC[s.lv]??'#2a5068';document.getElementById('secondoBox').style.cssText=`background:${sc}12;border:1px solid ${sc}44;border-radius:10px;padding:13px 17px;margin-bottom:12px;display:flex;align-items:center;gap:12px;`;document.getElementById('secondoI').textContent=LVI[s.lv]??'⚪';document.getElementById('secondoL').textContent=LVL[s.lv];document.getElementById('secondoL').style.color=sc;document.getElementById('secondoD').textContent=s.noVil?'Rischio potenziale — VIL≈0':'Rischio convettivo composito';document.getElementById('secondoD').style.color=sc;
+  const sd=s.det,setD=(id,lv,val)=>{const dot=document.getElementById('sd-'+id),vel=document.getElementById('sv-'+id);if(dot)dot.style.background=LVC[lv]??'#2a5068';if(vel)vel.textContent=val;};
+  setD('cape',sd.cape.lv,sd.cape.val);setD('li',sd.li.lv,sd.li.val);setD('vil',sd.vil.lv,sd.vil.val);document.getElementById('sv-veto').textContent=sd.vil.veto?'[VETO]':'';setD('trig',sd.trig.lv,sd.trig.val);setD('umid',sd.umid.lv,sd.umid.val);
+  document.getElementById('massimaBanner').style.display=p.lv==='rosso'&&s.lv==='rosso'?'block':'none';}
+}
+function renderAria(aq){
+  if(!aq?.hourly?.time)return;
+  const h=aq.hourly,now=new Date(),idx=h.time.findIndex(t=>new Date(t)>=now),i=idx>=0?idx:0;
+  const aqi=h.european_aqi?.[i]??null,al=aqiLv(aqi);
+  document.getElementById('aqiN').textContent=aqi!=null?Math.round(aqi):'N/D';document.getElementById('aqiN').style.color=al.c;
+  document.getElementById('aqiS').textContent=al.l;document.getElementById('aqiS').style.color=al.c;
+  document.getElementById('aqiD').textContent=al.d;
+  const dust=h.dust?.[i]??0,db=document.getElementById('dustB');
+  const alSent=STATE.farSents?.find(s=>s.id==='al');
+  const alWd=alSent?.wd??null;
+  const alHasSoutherly=alWd==null||(alWd>=135&&alWd<=315);
+  if(dust>50&&alHasSoutherly){
+    const col=dust>500?'#ef4444':dust>200?'#f97316':'#eab308',lbl=dust>500?'SEVERA':dust>200?'INTENSA':'MODERATA';
+    db.classList.add('active');db.style.background=`${col}18`;db.style.border=`1px solid ${col}44`;
+    document.getElementById('dustT').style.color=col;
+    document.getElementById('dustT').textContent=`🏜 Polvere Sahariana — ${lbl}`;
+    document.getElementById('dustD').style.color=col;
+    document.getElementById('dustD').textContent=`${dust.toFixed(0)} µg/m³ · Algeri ${wdL(alWd)} — forzante meridionale confermata`;
+  }else if(dust>50&&!alHasSoutherly){
+    db.classList.add('active');db.style.background='rgba(30,64,96,0.12)';db.style.border='1px solid #1e406033';
+    document.getElementById('dustT').style.color='#3a6080';
+    document.getElementById('dustT').textContent='🏜 Polvere Sahariana (modello) — trasporto non confermato';
+    document.getElementById('dustD').style.color='#1e4060';
+    document.getElementById('dustD').textContent=`CAMS: ${dust.toFixed(0)} µg/m³ · Algeri ${wdL(alWd)} — vento non meridionale, trasporto verso CV fisicamente escluso`;
+  }else{db.classList.remove('active');}
+  [['pm25',h.pm2_5?.[i],[10,25,50]],['pm10',h.pm10?.[i],[20,50,100]],['no2',h.nitrogen_dioxide?.[i],[20,40,100]],['o3',h.ozone?.[i],[60,100,180]],['grass',h.grass_pollen?.[i],[10,30,90]],['birch',h.birch_pollen?.[i],[10,30,90]]].forEach(([id,val,thr])=>{const el=document.getElementById('p-'+id);if(el){el.textContent=val!=null?val.toFixed(1):'—';el.style.color=pCol(val,thr);}});
+}
+function renderSole(hrs){
+  // ── SOLE — sincronia oraria + previsionale (v9.6) ──────────────────────
+  const today=new Date();
+  const sun=calcSunTimes(today);
+  const nowHour=today.getHours()+today.getMinutes()/60;
+  const isDay=sun.isDaylight(nowHour);
+  const isCivil=sun.isCivil(nowHour);
+  const uvN=hrs[0]?.uv??null,ul=uvLv(isDay?uvN:0);
+  // badge alba/tramonto
+  const sunBadge=`<div style="font-size:9px;color:#1e4060;margin-top:6px;letter-spacing:0.5px">
+    🌅 Alba ${hToStr(sun.sunrise)} · 🌇 Tramonto ${hToStr(sun.sunset)} · ☀ Mezzogiorno solare ${hToStr(sun.noon)}
+  </div>`;
+  if(!isDay&&!isCivil){
+    // NOTTE: UV non applicabile, mostra info notturna
+    document.getElementById('uvN').textContent='🌙';
+    document.getElementById('uvN').style.color='#3a6080';
+    document.getElementById('uvS').textContent='Ore notturne — UV non applicabile';
+    document.getElementById('uvS').style.color='#1e4060';
+    document.getElementById('uvR').textContent=`Alba prevista: ${hToStr(sun.sunrise)}`;
+    document.getElementById('uvMk').style.left='0%';
+  }else{
+    document.getElementById('uvN').textContent=uvN!=null?(isDay?uvN.toFixed(1):'0.0'):'—';
+    document.getElementById('uvN').style.color=ul.c;
+    document.getElementById('uvS').textContent=isDay?ul.l:'Crepuscolo civile';
+    document.getElementById('uvS').style.color=ul.c;
+    document.getElementById('uvR').textContent=isDay?ul.rec:`Tramonto: ${hToStr(sun.sunset)}`;
+    document.getElementById('uvMk').style.left=`${Math.min(100,(isDay?ul.pct:0)*100)}%`;
+  }
+  // Tabella oraria UV — distingue giorno/notte con icona
+  document.getElementById('uvHrs').innerHTML=hrs.slice(0,12).map(h=>{
+    const hTime=h.time instanceof Date?h.time:new Date(h.time??Date.now());
+    const hH=hTime.getHours()+hTime.getMinutes()/60;
+    const hDay=sun.isDaylight(hH);
+    const lv=uvLv(hDay?h.uv:0);
+    const nightMark=!hDay?'🌙':'';
+    const label=h.label??hTime.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    return`<div class="uv-hour">
+      <div class="uh-t">${label}</div>
+      <div class="uh-v" style="color:${hDay?lv.c:'#1e4060'}">${nightMark||( h.uv!=null?h.uv.toFixed(0):'—')}</div>
+      <div class="uh-s" style="color:${lv.c}">${hDay&&lv.spf!=='—'?lv.spf:nightMark?'notte':''}</div>
+    </div>`;
+  }).join('');
+  // Badge alba/tramonto nella card UV
+  const uvCard=document.getElementById('uvHrs')?.parentElement;
+  let sunBadgeEl=document.getElementById('sunTimeBadge');
+  if(!sunBadgeEl&&uvCard){
+    sunBadgeEl=document.createElement('div');sunBadgeEl.id='sunTimeBadge';
+    uvCard.appendChild(sunBadgeEl);
+  }
+  if(sunBadgeEl)sunBadgeEl.innerHTML=sunBadge;
+
+  // ── SOLE — PREVISIONALE 8H ──────────────────────────────────────────────
+  const next8=hrs.slice(0,9);
+  const maxUv8=Math.max(...next8.map(h=>{
+    const hTime=h.time instanceof Date?h.time:new Date(h.time??Date.now());
+    return sun.isDaylight(hTime.getHours()+hTime.getMinutes()/60)?h.uv??0:0;
+  }));
+  const uvPeak=next8.reduce((best,h)=>{
+    const hTime=h.time instanceof Date?h.time:new Date(h.time??Date.now());
+    if(!sun.isDaylight(hTime.getHours()+hTime.getMinutes()/60))return best;
+    return(h.uv??0)>=(best?.uv??0)?h:best;
+  },null);
+  const uvForecastEl=document.getElementById('uvForecast');
+  if(uvForecastEl){
+    if(maxUv8>0){
+      const lPeak=uvLv(maxUv8);
+      const peakLabel=uvPeak?.label??'—';
+      uvForecastEl.innerHTML=`<div style="font-size:10px;color:#2a5068;margin-top:10px;padding-top:8px;border-top:1px solid #0b1828">
+        <b>☀ Previsione solare prossime 8h:</b> picco UV <b style="color:${lPeak.c}">${maxUv8.toFixed(1)} — ${lPeak.l}</b> previsto intorno alle ${peakLabel}
+        · Protezione consigliata: <b style="color:${lPeak.c}">${lPeak.spf!=='—'?lPeak.spf:'nessuna'}</b>
+        ${maxUv8>=8?' ⚠ Evitare esposizione diretta nelle ore centrali.':''}
+      </div>`;
+    }else{
+      uvForecastEl.innerHTML='<div style="font-size:10px;color:#1e4060;margin-top:8px">☀ Nessuna ora diurna significativa nelle prossime 8h.</div>';
+    }
+  }
+
+  // ── ARIA — PREVISIONALE 8H ─────────────────────────────────────────────
+  const aqForecastEl=document.getElementById('aqForecast');
+  if(aqForecastEl&&STATE.aq){
+    // Open-Meteo CAMS fornisce dati orari — leggi le prossime 8h se disponibili
+    const aqHrs=STATE.aq._hrs??[];
+    if(aqHrs.length>0){
+      const aqi8=aqHrs.slice(0,8).map(a=>a.aqi??0);
+      const maxAqi=Math.max(...aqi8);
+      const aqiColors={1:'#22c55e',2:'#84cc16',3:'#eab308',4:'#f97316',5:'#ef4444'};
+      const aqiLabels={1:'Buona',2:'Discreta',3:'Moderata',4:'Scarsa',5:'Molto scarsa'};
+      const col=aqiColors[Math.round(maxAqi)]??'#3a6080';
+      const lbl=aqiLabels[Math.round(maxAqi)]??'—';
+      aqForecastEl.innerHTML=`<div style="font-size:10px;color:#2a5068;margin-top:10px;padding-top:8px;border-top:1px solid #0b1828">
+        <b>💨 Qualità aria prevista prossime 8h:</b> indice massimo AQI <b style="color:${col}">${maxAqi.toFixed(1)} — ${lbl}</b>
+        ${maxAqi>=4?' ⚠ Evitare sforzi fisici prolungati all\'aperto.':maxAqi>=3?' — Cautela per soggetti sensibili.':''}
+      </div>`;
+    }else{
+      aqForecastEl.innerHTML='<div style="font-size:10px;color:#1e4060;margin-top:8px">💨 Previsione qualità aria non disponibile.</div>';
+    }
+  }
+
+  const uvSc=['—','BASSO','MODERATO','ALTO','MOLTO ALTO','ESTREMO'].indexOf(ul.l),w=Math.max(uvSc,0);
+  let col,icon,titolo,cons;
+  if(w<=1){col='#22c55e';icon='🏖';titolo='CONDIZIONI ECCELLENTI';cons=['☀ Esposizione sicura con protezione ordinaria','💧 Idratazione regolare','🌊 Balneazione: ottimale'];}
+  else if(w===2){col='#eab308';icon='⛱';titolo='CONDIZIONI BUONE';cons=[`🧴 ${ul.spf!=='—'?ul.spf+' raccomandato':'Protezione consigliata'}`,'😎 Occhiali da sole','⏰ Limitare esposizione 12–15'];}
+  else if(w===3){col='#f97316';icon='⚠';titolo='CONDIZIONI MODERATE';cons=[`🧴 ${ul.spf!=='—'?ul.spf+' obbligatorio':'Alta protezione'}`,'👶 Bambini/anziani: limitare','🕐 Ombra obbligatoria 11–16'];}
+  else{col='#ef4444';icon='🚫';titolo='CONDIZIONI CRITICHE';cons=['🏠 Evitare esposizione prolungata','👶 Ambienti freschi obbligatori','😷 Protezione totale'];}
+  const br=document.getElementById('beachRec');br.style.background=`${col}10`;br.style.border=`1px solid ${col}33`;
+  document.getElementById('beachT').style.color=col;document.getElementById('beachT').textContent=`${icon} ${titolo}`;
+  document.getElementById('beachI').style.color=col;document.getElementById('beachI').innerHTML=cons.map(c=>c+'<br>').join('');
+}
+
+// ── LOAD ALL ──
+async function loadAll(){
+  const btn=document.getElementById('btnRefresh'),ph=document.getElementById('placeholder'),lb=document.getElementById('loadingBox'),tabs=document.getElementById('tabs'),err=document.getElementById('errBox');
+  btn.disabled=true;btn.textContent='⏳ ...';
+  ph.style.display='none';lb.style.display='block';tabs.style.display='none';err.style.display='none';
+  document.getElementById('extBanner').classList.remove('on');
+  const setSrc=(id,ok,txt)=>{const el=document.getElementById('src-'+id);if(el){el.className='src-badge '+(ok?'ok':'err');el.textContent=txt;}};
+  ['om','sst','flood','aq','sp','sl','metar','radar','sat'].forEach(id=>{const el=document.getElementById('src-'+id);if(el){el.className='src-badge load';el.textContent=id.toUpperCase()+': ...';}});
+  try{
+    ST=null; // reset soglie stagionali ad ogni aggiornamento
+    document.getElementById('loadingStep').textContent='📡 Open-Meteo...';
+    const om=await fetchOM();setSrc('om',true,'OM: ✓');
+    document.getElementById('loadingStep').textContent='🌊 Marine API + SST...';
+    let marine=null;try{marine=await fetchMarine();setSrc('sst',true,'SST: ✓');}catch(_){setSrc('sst',false,'SST: ✗');}
+    document.getElementById('loadingStep').textContent='🌊 GloFAS Volturno...';
+    let flood=null;try{flood=await fetchFlood();setSrc('flood',true,'GloFAS: ✓');}catch(_){setSrc('flood',false,'GloFAS: ✗');}
+    document.getElementById('loadingStep').textContent='💨 Aria & Sole (CAMS)...';
+    let aq=null;try{aq=await fetchAQ();if(aq){setSrc('aq',true,aq._s==='core'?'Aria: ✓(core)':'Aria: ✓');}else{setSrc('aq',false,'Aria: N/D');document.getElementById('btn-aria').style.display='none';}}catch(_){setSrc('aq',false,'Aria: ✗');document.getElementById('btn-aria').style.display='none';}
+    document.getElementById('loadingStep').textContent='🧭 Sentinelle prossime...';
+    let nearSents=[];try{nearSents=await fetchSentGroup(SNEAR);setSrc('sp',true,'Sent.P: ✓');}catch(_){setSrc('sp',false,'Sent.P: ✗');}
+    document.getElementById('loadingStep').textContent='🌍 Sentinelle lontane...';
+    let farSents=[],farSwell={};
+    try{farSents=await fetchSentGroup(SFAR);farSwell=await fetchFarSwell();setSrc('sl',true,'Sent.L: ✓');}catch(_){setSrc('sl',false,'Sent.L: ✗');}
+    // v9.3: METAR — Livello 1 osservativo, gerarchia > NWP
+    document.getElementById('loadingStep').textContent='📡 METAR osservazioni reali...';
+    let metarData={primary:null,sents:{}};
+    let metarNeedsFallback=false;
+    try{
+      const allIds=[METAR_STATIONS.primary,...METAR_STATIONS.sents];
+      setSrc('metar',false,'METAR: ...');
+      const metRaw=await fetchMETAR(allIds);
+      const metMap={};
+      for(const m of(metRaw??[])){const id=m.stationId??m.icaoId;if(id)metMap[id]=parseMETAR(m);}
+      metarData.primary=metMap[METAR_STATIONS.primary]??null;
+      for(const id of METAR_STATIONS.sents)metarData.sents[id]=metMap[id]??null;
+      const p=metarData.primary;
+      if(!p){
+        // v9.5: il fetch ha risposto OK (nessuna eccezione), ma la stazione
+        // primaria (LIRM) non è presente nel payload o non è parsabile —
+        // es. METAR non ancora emesso, stazione militare senza report civile
+        // pubblico in quella finestra. Prima non attivava il fallback perché
+        // il fallback viveva solo nel catch: badge restava ✗ senza alternativa.
+        metarNeedsFallback=true;
+      }else{
+        setSrc('metar',true,`METAR: ${p.station}${p.ageMin!=null?' '+p.ageMin+'min':''}`);
+      }
+    }catch(e){
+      console.warn('METAR fail',e);
+      metarData._lastError=String(e?.message??e);
+      metarNeedsFallback=true;
+    }
+    if(metarNeedsFallback){
+      // v9.4: fallback Open-Meteo `current` — analisi NWP recente (~1h),
+      // non misura diretta, ma molto più vicino all'osservato rispetto al
+      // forecast orario. Etichettato chiaramente come fallback, non METAR.
+      try{
+        const cur=await fj(`https://api.open-meteo.com/v1/forecast?latitude=${CV.lat}&longitude=${CV.lon}&current=temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe/Rome`);
+        if(cur?.current){
+          const c=cur.current;
+          metarData.primary={
+            ws:c.wind_speed_10m??0,wg:c.wind_gusts_10m??0,wd:c.wind_direction_10m??null,
+            cloudPct:c.cloud_cover??null,ceilFt:null,
+            rainNow:(c.precipitation??0)>0.2,tsNow:false,
+            temp:c.temperature_2m??null,dp:null,ageMin:0,
+            raw:`[OM-current] T${c.temperature_2m?.toFixed(1)}°C P${c.precipitation?.toFixed(1)}mm Cloud${c.cloud_cover}%`,
+            station:'OM-CV',_isFallback:true
+          };
+          setSrc('metar',true,'METAR: OM▸');
+        }else{setSrc('metar',false,'METAR: N/D');}
+      }catch(_){setSrc('metar',false,'METAR: N/D');}
+    }
+    // v9.9beta: RADAR REALE — conferma osservativa su pioggia in atto.
+    // Nato da un bug documentato sul campo: senza questo controllo, il
+    // banner "PIOGGIA IN ATTO" poteva scattare da soli proxy fisici anche a
+    // cielo sereno (osservazione diretta 5-6 luglio 2026). Fallback silenzioso
+    // se entrambe le fonti non rispondono — non blocca mai il caricamento.
+    document.getElementById('loadingStep').textContent='📡 Radar reale (DPC/RainViewer)...';
+    let radarStatus=null;
+    try{
+      radarStatus=await fetchRealRadar(CV.lat,CV.lon);
+      if(radarStatus)setSrc('radar',true,`RADAR: ${radarStatus.hasEcho?'eco':'asciutto'} (${radarStatus.source})`);
+      else setSrc('radar',false,'RADAR: N/D');
+    }catch(_){setSrc('radar',false,'RADAR: N/D');}
+    // v9.9beta: SATELLITE EUMETSAT — vista ampia, solo informativo in questa
+    // versione (non corregge punteggi). Best-effort: se fallisce non blocca
+    // nulla, la card satellite resta semplicemente vuota.
+    document.getElementById('loadingStep').textContent='🛰️ Satellite EUMETSAT (vista ampia)...';
+    let eumetsat=null;
+    try{
+      eumetsat=await fetchEumetsatWide();
+      setSrc('sat',eumetsat.ok>0,`SAT: ${eumetsat.ok}/3`);
+    }catch(_){setSrc('sat',false,'SAT: N/D');}
+    // PATCH v8.11: hrs48 ora è davvero ~48h (vedi extractHours sopra).
+    // hrs8 resta il sotto-insieme usato dalla Scheda 1 (Previsione 8-12h).
+    const hrs=extractHours(om,49); // hrs48 nel resto del codice
+    // v9.3: applica override METAR all'ora corrente (Livello 1 > NWP)
+    if(metarData.primary&&hrs.length>0){
+      const ov=metarOverride(metarData.primary);
+      if(ov)Object.assign(hrs[0],ov);
+    }
+    let sst=null;
+    if(marine?.hourly?.sea_surface_temperature){const nMs=Date.now(),idx=marine.hourly.time.findIndex((t,i)=>new Date(t)>=new Date(nMs-3600000)&&marine.hourly.sea_surface_temperature[i]!=null&&marine.hourly.sea_surface_temperature[i]>-2);if(idx>=0){sst=parseFloat(marine.hourly.sea_surface_temperature[idx].toFixed(1));setSrc('sst',true,`SST: ${sst}°C`);}}
+    const marHrs=marine?.hourly?.time?marine.hourly.time.map((t,i)=>({t:new Date(t),i})).filter(({t})=>t>=new Date()).slice(0,7).map(({t,i})=>({lb:t.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),wH:marine.hourly.wave_height?.[i]??0,wP:marine.hourly.wave_period?.[i]??0,sH:marine.hourly.swell_wave_height?.[i]??0})):[];
+    // FIX Belardo_v9.9beta1 (round 5): stessa condizione di isObsConfirmedDry() (vedi
+    // sopra), ma qui STATE={...} non è ancora stato assegnato per questo
+    // run — si usano le variabili locali radarStatus/metarData appena
+    // popolate in questa stessa funzione, non lo STATE del render precedente.
+    const obsConfirmedDryNow = (radarStatus!=null && radarStatus.hasEcho===false)
+      || (metarData.primary!=null && metarData.primary.cloudPct!=null && metarData.primary.cloudPct<20 && metarData.primary.rainNow!==true);
+    const risk=assessRisk(hrs[0],sst,obsConfirmedDryNow),lastUpdate=new Date();
+    // Calcola swell max per frontale
+    const swellMax=marHrs.length?Math.max(...marHrs.map(m=>m.sH)):0;
+    STATE={hrs,sst,marHrs,risk,lastUpdate,flood,aq,nearSents,farSents,farSwell,swell:swellMax,metarData,radarStatus,eumetsat};
+    lb.style.display='none';tabs.style.display='flex';renderAll();
+  }catch(e){lb.style.display='none';ph.style.display='block';setSrc('om',false,'OM: ✗');err.textContent='⚠ Errore: '+e.message;err.style.display='block';}
+  btn.disabled=false;btn.textContent='↻ AGGIORNA';
+}
+
+function switchTab(id){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');event.target.classList.add('active');}
+function copyBf(){const text=document.getElementById('bfText').textContent,btn=document.getElementById('btnCopy'),ta=document.getElementById('cpTA');ta.value=text;ta.style.display='block';ta.select();ta.setSelectionRange(0,99999);if(navigator.clipboard?.writeText){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ COPIATO — incolla in chat con "procedi"';btn.classList.add('copied');ta.style.display='none';setTimeout(()=>{btn.textContent='📋 COPIA BRIEFING';btn.classList.remove('copied');},3000);}).catch(()=>{btn.textContent='☝️ Seleziona e copia';});}else{try{document.execCommand('copy');}catch(_){}btn.textContent='☝️ Seleziona e copia';}}
+function toggleRs(){const p=document.getElementById('rsPanel'),a=document.getElementById('rsArr');if(p.style.display==='none'){p.style.display='block';a.textContent='▼';}else{p.style.display='none';a.textContent='▶';}}
+function onRsChange(){const v=parseFloat(document.getElementById('rsInput').value);rsKm=isNaN(v)?null:v;if(STATE.hrs?.length>0)renderDoppio(STATE.hrs[0],STATE.sst);}
+function clearRs(){document.getElementById('rsInput').value='';rsKm=null;onRsChange();}
+</script>
+</body>
+</html>
