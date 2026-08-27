@@ -55,18 +55,25 @@ cui convenzione di naming nei file .idx è meno documentata pubblicamente.
 Controllare i log del job "Estrai profilo tropopausa" ad ogni run finché
 non si stabilizza.
 
-NOTA ONESTA 2 (27/08/2026): Herbie(now, model=..., fxx=0) qui sotto passa
-un orario arbitrario (datetime.now), non uno dei cicli sinottici veri
-(00/06/12/18Z). Non verificato se Herbie arrotona automaticamente al run
-più recente disponibile o se serva invece herbie.latest.HerbieLatest per
-questo scopo — primo indiziato se il job fallisce con un errore legato
-all'URL/al file non trovato piuttosto che ai livelli mancanti.
+NOTA (27/08/2026, operatore+assistente) — risolto un problema di datetime
+tz-aware/naive (Herbie confronta internamente datetime naive) e verificato
+che Herbie NON arrotonda da solo un orario arbitrario al ciclo sinottico
+più vicino: bisogna passargli un orario di ciclo (00/06/12/18Z) valido
+(pattern raccomandato dagli sviluppatori Herbie stessi, discussione
+GitHub blaylockbk/Herbie#272). Inoltre un ciclo "in orario" non è detto
+sia già pubblicato: GFS pubblica l'analisi f000 mediamente ~3h20-30min
+dopo l'ora di riferimento, ECMWF Open Data tipicamente 6-8h (dati
+osservati, non la sonda che "ci mette" quel tempo ad influenzare il
+modello — l'assimilazione chiude entro poche ore dall'orario di
+riferimento, il ritardo è calcolo/QC/distribuzione a valle). Lo script
+ora prova il ciclo atteso e, se non ancora pubblicato, risale a ritroso
+(vedi _find_published_run) invece di fallire secco.
 """
 import json
 import os
 import sys
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from herbie import Herbie
 
@@ -74,12 +81,61 @@ CV_LAT = 41.035
 CV_LON = 13.942
 OUTPUT_PATH = "data/tropo-grib-latest.json"
 
+# Mappa ora UTC di esecuzione del job (cron: 3,6,10,15,18,22) -> ciclo
+# sinottico del modello (00/06/12/18Z) che quel run VORREBBE interrogare
+# (punto di partenza per lo step-back qui sotto, non una garanzia che sia
+# già pubblicato). 03 e 15 puntano a 00Z/12Z per l'allineamento coi
+# sondaggi Wyoming (vedi commento in tropo-grib-pipeline.yml); gli altri
+# quattro guardano al ciclo precedente con margine.
+JOB_HOUR_TO_CYCLE = {3: 0, 6: 0, 10: 6, 15: 12, 18: 12, 22: 18}
 
-def _extract_one_product(model, product, search_string, now):
+
+def _target_cycle(now):
+    """Arrotonda `now` (naive UTC) al ciclo sinottico 00/06/12/18Z di
+    partenza. Herbie non arrotonda da solo: si aspetta in input l'orario
+    esatto del ciclo, non un orario arbitrario nella finestra (pattern
+    ufficiale Herbie: floor su 6h prima di passare la data — vedi
+    discussione GitHub blaylockbk/Herbie#272). Il fallback
+    `(now.hour // 6) * 6` copre run manuali fuori dagli orari previsti
+    (es. workflow_dispatch)."""
+    cycle_hour = JOB_HOUR_TO_CYCLE.get(now.hour, (now.hour // 6) * 6)
+    return now.replace(hour=cycle_hour, minute=0, second=0, microsecond=0)
+
+
+def _find_published_run(model, product, target_cycle, max_stepback=2):
+    """Prova `target_cycle`, poi risale a ritroso di un ciclo (-6h) alla
+    volta fino a `max_stepback` tentativi in più, finché non trova un run
+    i cui file sono DAVVERO pubblicati (H.grib valorizzato) — non basta
+    che l'orario sia "nel passato", il file deve esistere sul bucket.
+
+    Perché serve: la pubblicazione di un ciclo non è istantanea rispetto
+    all'orario di riferimento. GFS pubblica l'analisi (f000) di un ciclo
+    mediamente ~3h20-30min dopo l'ora di riferimento (dato osservato su
+    NOMADS in un caso misurato, non "si presume disponibile subito");
+    ECMWF Open Data è tipicamente più lento (comunemente citato 6-8h).
+    Questo NON è il tempo che i dati da radiosonda impiegano a entrare
+    nel modello — l'assimilazione usa una finestra di poche ore intorno
+    all'orario di riferimento e la sonda è già dentro quella finestra —
+    è tempo di calcolo/QC/distribuzione A VALLE dell'assimilazione, un
+    passaggio separato. Per questo il ciclo "giusto" secondo
+    JOB_HOUR_TO_CYCLE potrebbe non essere ancora pubblicato quando il
+    job gira, specialmente per ECMWF sugli slot più stretti (03/15h)."""
+    candidate = target_cycle
+    H = None
+    for _ in range(max_stepback + 1):
+        H = Herbie(candidate, model=model, product=product, fxx=0)
+        if H.grib:
+            return H
+        candidate = candidate - timedelta(hours=6)
+    return H  # ultimo tentativo: se ancora senza grib, H.xarray() sotto
+              # solleverà e il chiamante lo registrerà come errore
+
+
+def _extract_one_product(model, product, search_string, target_cycle):
     """Interroga UN prodotto/fonte e ritorna (temps_by_level, heights_by_level,
     run_iso) — dict vuoti se nessun livello trovato. Non solleva mai
     eccezioni verso il chiamante oltre quelle già gestite dentro."""
-    H = Herbie(now, model=model, product=product, fxx=0)
+    H = _find_published_run(model, product, target_cycle)
     ds = H.xarray(search_string, remove_grib=True)
     datasets = ds if isinstance(ds, list) else [ds]
 
@@ -113,7 +169,14 @@ def extract_model_profile(model, products, search_string):
     Per fonti con un solo prodotto (es. ECMWF) passare una lista di un
     elemento: il comportamento è identico allo script precedente."""
     try:
-        now = datetime.now(timezone.utc)
+        # naive UTC e arrotondato al ciclo sinottico corretto (_target_cycle):
+        # tz-aware farebbe fallire il confronto interno di Herbie con
+        # TypeError ("can't compare offset-naive and offset-aware
+        # datetimes"); un orario non arrotondato (es. le 03:00 esatte di
+        # esecuzione del job) farebbe cercare un ciclo 03Z che non esiste.
+        # H.date resta naive-UTC, coerente con l'uso a riga ~100
+        # (H.date.replace(tzinfo=timezone.utc)).
+        now = _target_cycle(datetime.now(timezone.utc).replace(tzinfo=None))
         temps_by_level = {}
         heights_by_level = {}
         run_iso = None
