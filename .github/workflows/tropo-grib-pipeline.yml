@@ -1,0 +1,61 @@
+name: Estrazione profilo tropopausa GRIB2 (GFS+ECMWF)
+
+# Trigger manuale (gh workflow run "Estrazione profilo tropopausa GRIB2
+# (GFS+ECMWF)" --repo freegenesis-ux/cv-nowcasting) + cron 4x/giorno,
+# ~5h dopo ogni ciclo sinottico 00/06/12/18Z, per dare tempo alla
+# pubblicazione dei file sul bucket NOAA/ECMWF.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5,11,17,23 * * *'
+
+permissions:
+  contents: write
+
+# Evita run sovrapposti se un trigger manuale capita a ridosso di un cron
+# schedulato — non annulla quello in corso, semplicemente mette in coda.
+concurrency:
+  group: tropo-grib-pipeline
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # NOTA (27/08/2026, operatore+assistente): dalla versione 2.37,
+      # eccodes-python dovrebbe portare con sé il binario ecCodes bundled,
+      # senza bisogno di apt-get/sudo — MAI verificato su un run reale di
+      # questo workflow. Se il job fallisce con un errore del tipo
+      # "ecCodes library not found" / "Could not find libeccodes" /
+      # simili durante l'import di cfgrib, decommenta lo step sotto e
+      # rilancia — è la causa più comune per questo genere di errore su
+      # runner Ubuntu puliti.
+      # - name: Install system eccodes (fallback se pip da solo non basta)
+      #   run: sudo apt-get update && sudo apt-get install -y libeccodes-dev
+
+      - name: Install Python dependencies
+        run: pip install herbie-data cfgrib xarray eccodes
+
+      - name: Esegui estrazione profilo tropopausa
+        run: python scripts/extract_tropo_profile.py
+
+      # [skip ci] nel messaggio di commit: evita di far ripartire inutilmente
+      # il workflow "pages build and deployment" ad ogni aggiornamento dati
+      # (4 volte al giorno) — GitHub Pages serve comunque il JSON aggiornato
+      # dal branch, non serve una nuova build per un file dati statico.
+      - name: Commit e push del JSON aggiornato
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/tropo-grib-latest.json
+          git diff --staged --quiet && echo "Nessuna modifica, skip commit" || git commit -m "Aggiorna profilo tropopausa GRIB2 [skip ci]"
+          git push
