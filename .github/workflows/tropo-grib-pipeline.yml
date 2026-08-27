@@ -1,13 +1,15 @@
 name: Estrazione profilo tropopausa GRIB2 (GFS+ECMWF)
 
 # Trigger manuale (gh workflow run "Estrazione profilo tropopausa GRIB2
-# (GFS+ECMWF)" --repo freegenesis-ux/cv-nowcasting) + cron 4x/giorno,
-# ~5h dopo ogni ciclo sinottico 00/06/12/18Z, per dare tempo alla
-# pubblicazione dei file sul bucket NOAA/ECMWF.
+# (GFS+ECMWF)" --repo freegenesis-ux/cv-nowcasting) + cron 6x/giorno,
+# 03/06/10/15/18/22 UTC — non equispaziati per caso: 03 e 15 sono
+# essenziali per la sovrapposizione con i sondaggi Wyoming (00Z/12Z) e col
+# decadimento di pesoSonda (round65-71), gli altri quattro coprono il
+# resto del ciclo con margine dopo ogni run 00/06/12/18Z dei modelli.
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 5,11,17,23 * * *'
+    - cron: '0 3,6,10,15,18,22 * * *'
 
 permissions:
   contents: write
@@ -50,7 +52,7 @@ jobs:
 
       # [skip ci] nel messaggio di commit: evita di far ripartire inutilmente
       # il workflow "pages build and deployment" ad ogni aggiornamento dati
-      # (4 volte al giorno) — GitHub Pages serve comunque il JSON aggiornato
+      # (6 volte al giorno) — GitHub Pages serve comunque il JSON aggiornato
       # dal branch, non serve una nuova build per un file dati statico.
       - name: Commit e push del JSON aggiornato
         run: |
