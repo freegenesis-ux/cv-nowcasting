@@ -143,6 +143,18 @@ def _find_published_run(model, product, target_cycle, max_stepback=2):
     H = None
     for _ in range(max_stepback + 1):
         H = Herbie(candidate, model=model, product=product, fxx=0, priority=priority)
+        # DIAGNOSTICA TEMPORANEA (28/08/2026, operatore+assistente) — 'rda'
+        # (NCAR) non compare nella documentazione ufficiale Herbie come
+        # fonte valida per 'priority' (solo aws/nomads/google/azure/pando/
+        # pando2), eppure priority=['aws'] non ha impedito il fallimento su
+        # data.rda.ucar.edu. Serve vedere quali fonti Herbie considera
+        # DAVVERO per questo modello/prodotto, per capire se RDA è
+        # governata da priority o è un fallback fuori dal suo controllo.
+        # Da rimuovere una volta chiarito.
+        print(f"[DIAG {model}/{product}] priority richiesta={priority} | "
+              f"H.priority={getattr(H,'priority',None)} | "
+              f"H.SOURCES={list(getattr(H,'SOURCES',{}).keys()) if hasattr(H,'SOURCES') else 'n/d'} | "
+              f"grib_source={getattr(H,'grib_source',None)}")
         if H.grib:
             return H
         candidate = candidate - timedelta(hours=6)
