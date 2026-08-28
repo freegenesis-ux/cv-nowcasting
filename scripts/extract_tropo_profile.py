@@ -119,11 +119,30 @@ def _find_published_run(model, product, target_cycle, max_stepback=2):
     è tempo di calcolo/QC/distribuzione A VALLE dell'assimilazione, un
     passaggio separato. Per questo il ciclo "giusto" secondo
     JOB_HOUR_TO_CYCLE potrebbe non essere ancora pubblicato quando il
-    job gira, specialmente per ECMWF sugli slot più stretti (03/15h)."""
+    job gira, specialmente per ECMWF sugli slot più stretti (03/15h).
+
+    FIX (28/08/2026, operatore+assistente) — priority esplicita per fonte
+    invece di lasciare Herbie scegliere da solo: trovato dal vivo che,
+    senza vincolo, Herbie a volte sceglie data.rda.ucar.edu (NCAR
+    Research Data Archive) per GFS invece del bucket AWS (verificato
+    funzionante a mano via curl il 27/08). NCAR RDA ha un certificato
+    SSL auto-firmato non valido lato server — causa SSLCertVerificationError,
+    fallimento SILENZIOSO di quella fonte per quel lancio (GFS: null nel
+    JSON pubblicato, "gfs" scomparso senza errore visibile a schermo —
+    solo nel campo "errors" del JSON). Non è un problema risolvibile da
+    parte nostra (è il certificato del server NCAR); la soluzione è
+    restringere la ricerca alla fonte nota affidabile per QUEL modello.
+    ATTENZIONE: GFS ed ECMWF via Herbie NON condividono la stessa fonte
+    affidabile — verificato dal log del primo run riuscito (27/08): GFS
+    via AWS, ECMWF via Google Cloud Storage. Una priority fissa uguale
+    per entrambi avrebbe rotto uno dei due modelli per "risolvere"
+    l'altro — da qui la mappa esplicita sotto invece di un valore unico."""
+    priority_by_model = {'gfs': ['aws'], 'ifs': ['google'], 'ecmwf': ['google']}
+    priority = priority_by_model.get(model)  # None se modello non mappato: nessun vincolo, comportamento originale
     candidate = target_cycle
     H = None
     for _ in range(max_stepback + 1):
-        H = Herbie(candidate, model=model, product=product, fxx=0)
+        H = Herbie(candidate, model=model, product=product, fxx=0, priority=priority)
         if H.grib:
             return H
         candidate = candidate - timedelta(hours=6)
