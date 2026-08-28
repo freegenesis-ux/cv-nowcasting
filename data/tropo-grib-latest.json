@@ -1,6 +1,255 @@
 {
-  "generatedISO": "2026-08-28T02:06:37.404579+00:00",
-  "gfs": null,
+  "generatedISO": "2026-08-28T04:51:11.681673+00:00",
+  "gfs": {
+    "runISO": "2026-08-28T00:00:00+00:00",
+    "levels": [
+      {
+        "hPa": 1000.0,
+        "tempC": 28.28,
+        "z": 154.0
+      },
+      {
+        "hPa": 975.0,
+        "tempC": 28.91,
+        "z": 379.3
+      },
+      {
+        "hPa": 950.0,
+        "tempC": 30.53,
+        "z": 611.2
+      },
+      {
+        "hPa": 925.0,
+        "tempC": 30.81,
+        "z": 849.7
+      },
+      {
+        "hPa": 900.0,
+        "tempC": 29.85,
+        "z": 1094.2
+      },
+      {
+        "hPa": 875.0,
+        "tempC": 28.27,
+        "z": 1344.4
+      },
+      {
+        "hPa": 850.0,
+        "tempC": 26.45,
+        "z": 1600.4
+      },
+      {
+        "hPa": 825.0,
+        "tempC": 24.57,
+        "z": 1862.3
+      },
+      {
+        "hPa": 800.0,
+        "tempC": 22.33,
+        "z": 2130.5
+      },
+      {
+        "hPa": 775.0,
+        "tempC": 19.8,
+        "z": 2404.9
+      },
+      {
+        "hPa": 750.0,
+        "tempC": 17.35,
+        "z": 2685.8
+      },
+      {
+        "hPa": 725.0,
+        "tempC": 14.8,
+        "z": 2973.9
+      },
+      {
+        "hPa": 700.0,
+        "tempC": 11.94,
+        "z": 3269.2
+      },
+      {
+        "hPa": 675.0,
+        "tempC": 9.27,
+        "z": 3572.2
+      },
+      {
+        "hPa": 650.0,
+        "tempC": 6.73,
+        "z": 3883.9
+      },
+      {
+        "hPa": 625.0,
+        "tempC": 4.17,
+        "z": 4204.8
+      },
+      {
+        "hPa": 600.0,
+        "tempC": 1.64,
+        "z": 4535.6
+      },
+      {
+        "hPa": 575.0,
+        "tempC": -1.01,
+        "z": 4877.2
+      },
+      {
+        "hPa": 550.0,
+        "tempC": -3.54,
+        "z": 5230.5
+      },
+      {
+        "hPa": 525.0,
+        "tempC": -5.75,
+        "z": 5597.0
+      },
+      {
+        "hPa": 500.0,
+        "tempC": -8.21,
+        "z": 5977.9
+      },
+      {
+        "hPa": 475.0,
+        "tempC": -10.77,
+        "z": 6374.4
+      },
+      {
+        "hPa": 450.0,
+        "tempC": -13.53,
+        "z": 6788.0
+      },
+      {
+        "hPa": 425.0,
+        "tempC": -16.0,
+        "z": 7220.7
+      },
+      {
+        "hPa": 400.0,
+        "tempC": -19.52,
+        "z": 7674.3
+      },
+      {
+        "hPa": 375.0,
+        "tempC": -23.18,
+        "z": 8150.1
+      },
+      {
+        "hPa": 350.0,
+        "tempC": -26.75,
+        "z": 8651.6
+      },
+      {
+        "hPa": 325.0,
+        "tempC": -30.7,
+        "z": 9182.0
+      },
+      {
+        "hPa": 300.0,
+        "tempC": -35.25,
+        "z": 9744.7
+      },
+      {
+        "hPa": 275.0,
+        "tempC": -38.96,
+        "z": 10345.6
+      },
+      {
+        "hPa": 250.0,
+        "tempC": -43.47,
+        "z": 10992.9
+      },
+      {
+        "hPa": 225.0,
+        "tempC": -48.69,
+        "z": 11693.2
+      },
+      {
+        "hPa": 200.0,
+        "tempC": -54.23,
+        "z": 12457.3
+      },
+      {
+        "hPa": 175.0,
+        "tempC": -58.88,
+        "z": 13303.7
+      },
+      {
+        "hPa": 150.0,
+        "tempC": -63.36,
+        "z": 14260.9
+      },
+      {
+        "hPa": 125.0,
+        "tempC": -66.85,
+        "z": 15368.8
+      },
+      {
+        "hPa": 100.0,
+        "tempC": -64.52,
+        "z": 16720.9
+      },
+      {
+        "hPa": 70.0,
+        "tempC": -61.18,
+        "z": 18912.2
+      },
+      {
+        "hPa": 50.0,
+        "tempC": -56.74,
+        "z": 21019.6
+      },
+      {
+        "hPa": 40.0,
+        "tempC": -55.09,
+        "z": 22439.8
+      },
+      {
+        "hPa": 30.0,
+        "tempC": -53.33,
+        "z": 24283.6
+      },
+      {
+        "hPa": 20.0,
+        "tempC": -49.05,
+        "z": 26915.3
+      },
+      {
+        "hPa": 15.0,
+        "tempC": -46.46,
+        "z": 28815.0
+      },
+      {
+        "hPa": 10.0,
+        "tempC": -42.12,
+        "z": 31531.4
+      },
+      {
+        "hPa": 7.0,
+        "tempC": -39.5,
+        "z": 33956.7
+      },
+      {
+        "hPa": 5.0,
+        "tempC": -33.96,
+        "z": 36279.9
+      },
+      {
+        "hPa": 3.0,
+        "tempC": -21.93,
+        "z": 39955.7
+      },
+      {
+        "hPa": 2.0,
+        "tempC": -16.68,
+        "z": 42966.7
+      },
+      {
+        "hPa": 1.0,
+        "tempC": -11.17,
+        "z": 48253.4
+      }
+    ]
+  },
   "ecmwf": {
     "runISO": "2026-08-27T18:00:00+00:00",
     "levels": [
@@ -75,8 +324,5 @@
         "z": 31555.2
       }
     ]
-  },
-  "errors": [
-    "GFS: pgrb2.0p25: SSLError: HTTPSConnectionPool(host='data.rda.ucar.edu', port=443): Max retries exceeded with url: /d084001/2026/20260828/gfs.0p25.2026082800.f000.grib2 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1016)'))); pgrb2b.0p25: SSLError: HTTPSConnectionPool(host='data.rda.ucar.edu', port=443): Max retries exceeded with url: /d084001/2026/20260828/gfs.0p25.2026082800.f000.grib2 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1016)')))"
-  ]
+  }
 }
