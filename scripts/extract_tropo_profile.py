@@ -6,7 +6,9 @@ Estrae il profilo verticale (temperatura + quota geopotenziale) su TUTTI i
 livelli di pressione isobarici disponibili in GFS e ECMWF Open Data, al
 punto griglia più vicino a Castel Volturno (41.035N, 13.942E) — non più un
 solo istante (fxx=0), ma una SERIE oraria/trioraria che copre la finestra
-di previsione 0-12h del pannello (vedi FIX round77 sotto).
+di previsione 0-12h del pannello, con margine fino a 24h per coprire
+qualunque momento di lancio tra un ciclo cron e il successivo (vedi FIX
+round77 e round78 sotto).
 
 Perché questa pipeline esiste: verificato che Open-Meteo, per il quorum
 tropopausa, rappresenta malissimo proprio le fonti più autorevoli (ECMWF
@@ -63,6 +65,20 @@ mentre una vera tropopausa si sposta nel tempo. Ora si scarica una SERIE:
   curl sull'indice .index il 29/08: fxx=1,2,4 restituiscono 404, solo
   0,3,6,9,12... esistono. Non è un limite di Herbie, è ECMWF stesso che
   non pubblica passi orari in questa finestra per il prodotto "oper").
+
+FIX round78 (30/08/2026, operatore+assistente) — 0-12h NON bastava: la
+finestra era ancorata a "quando gira il workflow" (JOB_HOUR_TO_CYCLE),
+non a "quando verrà guardato il pannello". Tra due lanci cron possono
+passare fino a 5h (es. 10→15 UTC), e il pannello può essere aperto in
+qualsiasi momento di quell'intervallo — la sua finestra di previsione
+parte da "adesso", non dall'orario del job. Caso reale osservato il
+30/08: workflow alle 04:57 UTC (ciclo 00Z, serie 0-12h = 00:00-12:00
+UTC), pannello lanciato alle 12:27 UTC (7.5h dopo) — l'intera serie era
+già superata dal tempo, GRIB fetchato con successo ma MAI usato (zero
+corrispondenze orarie). Finestra estesa a fxx 0-24 (GFS orario, ECMWF
+ogni 3h) per coprire il caso peggiore: fino 6h di ritardo
+ciclo→pubblicazione + fino 5h di deriva tra cron + 12h di previsione
+del pannello.
 Il ciclo sinottico (00/06/12/18Z) viene risolto UNA VOLTA per modello,
 usando fxx=0 come test di pubblicazione (_resolve_cycle) — poi TUTTI gli
 fxx della serie si riferiscono allo stesso identico ciclo, altrimenti
@@ -97,8 +113,19 @@ JOB_HOUR_TO_CYCLE = {3: 0, 6: 0, 10: 6, 15: 12, 18: 12, 22: 18}
 # FIX round77 — serie di forecast hour per modello. GFS orario (copre ogni
 # ora 0-12 da solo); ECMWF trioraria (0,3,6,9,12 — il MASSIMO che la fonte
 # offre in questa finestra, verificato dal vivo, non una scelta nostra).
-GFS_FXX_SERIES = list(range(0, 13))
-ECMWF_FXX_SERIES = [0, 3, 6, 9, 12]
+# FIX round78 (30/08/2026, operatore+assistente) — 0-12h non bastava: il
+# pannello può essere lanciato in qualunque momento tra un run cron e il
+# successivo (gap fino a 5h, es. 10→15 UTC), e la sua finestra di
+# previsione parte da "adesso", non da quando gira il workflow. Caso
+# peggiore osservato dal vivo il 30/08: workflow alle 04:57 UTC (ciclo
+# 00Z), pannello lanciato alle 12:27 UTC (7.5h dopo) — l'intera serie
+# 0-12h era già superata dal tempo, gribTropoAt() non trovava mai
+# corrispondenza nonostante il fetch fosse riuscito. Margine ricalcolato:
+# fino 6h di ritardo ciclo→pubblicazione + fino 5h di deriva tra cron +
+# 12h di finestra di previsione del pannello = serve coprire fino a fxx
+# 24 dal ciclo, non 12.
+GFS_FXX_SERIES = list(range(0, 25))
+ECMWF_FXX_SERIES = [0, 3, 6, 9, 12, 15, 18, 21, 24]
 
 PRIORITY_BY_MODEL = {'gfs': ['aws'], 'ifs': ['google'], 'ecmwf': ['google']}
 
