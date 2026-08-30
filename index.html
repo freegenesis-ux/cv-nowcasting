@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta3 round30 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9beta3 round31 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -470,7 +470,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <pre class="pre-bf" id="devLogText">—</pre>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round30</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round31</div>
 
 </div>
 <script>
@@ -566,7 +566,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 //   · FIX etichetta "EUMETSAT MTG"→"EUMETSAT MSG+MTG" nella riga Fonte:
 //     del briefing (bug reale: il conteggio 3/3 sommava 2 fetch MSG +
 //     1 fetch MTG sotto un'unica etichetta sbagliata).
-const APP_VERSION='Belardo_v9.9beta3 round30';
+const APP_VERSION='Belardo_v9.9beta3 round31';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -1969,9 +1969,18 @@ const TROPO_OM_LEVELS=[300,250,200,150,100,70];
 const TROPO_ORDINALI=['seconda','terza','quarta','quinta','sesta'];
 function fmtTropoExtra(tropos){
   if(!Array.isArray(tropos)||tropos.length<2)return '';
-  return tropos.slice(1).map((t,idx)=>{
+  // FIX round 76 (29/08/2026, operatore+assistente) — soglie di confidenza
+  // su gapKm (distanza dal livello precedente nel sondaggio Wyoming nel
+  // punto di rilevazione): tra 3 e 5km etichetta esplicita "bassa
+  // confidenza" (visibile, non nascosta — l'operatore vuole saperlo, non
+  // che sia taciuto); oltre 5km omessa del tutto (troppo poco affidabile
+  // per essere mostrata anche con avviso). Solo per seconda/terza
+  // tropopausa (annotazione informativa) — mai per la prima, che alimenta
+  // la logica operativa e non viene mai filtrata da questa soglia.
+  return tropos.slice(1).filter(t=>(t.gapKm??0)<=5).map((t,idx)=>{
     const ord=TROPO_ORDINALI[idx]??`${idx+2}ª`;
-    return `${ord} ${(t.z/1000).toFixed(2)} km${t.hPa!=null?' · '+t.hPa+' hPa':''}`;
+    const lowConf=(t.gapKm??0)>3?' ⚠bassa confidenza':'';
+    return `${ord} ${(t.z/1000).toFixed(2)} km${t.hPa!=null?' · '+t.hPa+' hPa':''}${lowConf}`;
   }).join(', ');
 }
 function snapToOMLevel(hPa){
@@ -2240,21 +2249,23 @@ function calcTropo(i,h){
   // più onesta possibile finché il sondaggio grezzo resta invisibile.
   // Percorso 2: STIMA MODELLO. FIX round 66 (23/08/2026, operatore) —
   // pipeline-GRIB (25/08/2026, operatore) — ordine di priorità ora a TRE
-  // livelli, non più due: (1) GRIB2 diretto GFS+ECMWF (LAST_GRIB_QUORUM,
+  // livelli, non più due: (1) GRIB2 diretto GFS+ECMWF (gribTropoAt(),
   // pipeline dedicata Herbie/GitHub Actions, risoluzione nativa reale, non
-  // i livelli standard limitati di Open-Meteo) — ANALISI (fxx=0), quindi
-  // trattato come valore costante finché fresco, non variabile per ora i
-  // come le vere previsioni; (2) quorum Open-Meteo, ora ristretto ai 4
+  // i livelli standard limitati di Open-Meteo) — dal round77 è una vera
+  // SERIE oraria/trioraria (GFS orario, ECMWF ogni 3h con interpolazione
+  // tra le ancore reali), varia per ogni ora i esattamente come il quorum
+  // Open-Meteo faceva prima; (2) quorum Open-Meteo, ora ristretto ai 4
   // modelli meglio rappresentati (TROPO_QUORUM_MODELS, verificato
-  // empiricamente) — questo sì varia per ogni ora i, è una previsione
-  // vera; (3) singolo best_match, ultima rete di sicurezza, invariato.
+  // empiricamente) — paracadute quando GRIB non copre quest'ora
+  // specifica; (3) singolo best_match, ultima rete di sicurezza, invariato.
   // `ls`/tropohPa2 restano quelli del best_match in ogni caso: servono al
   // PROFILO VERTICALE del briefing (round40), non ha senso mediarlo.
   let tropoZ2=null,tropohPa2=null,tropoZ2Source='nessuno';
   const ls=[{hPa:300,t:h.temperature_300hPa?.[i],z:h.geopotential_height_300hPa?.[i]},{hPa:250,t:h.temperature_250hPa?.[i],z:h.geopotential_height_250hPa?.[i]},{hPa:200,t:h.temperature_200hPa?.[i],z:h.geopotential_height_200hPa?.[i]},{hPa:150,t:h.temperature_150hPa?.[i],z:h.geopotential_height_150hPa?.[i]},{hPa:100,t:h.temperature_100hPa?.[i],z:h.geopotential_height_100hPa?.[i]},{hPa:70,t:h.temperature_70hPa?.[i],z:h.geopotential_height_70hPa?.[i]}].filter(l=>l.t!=null&&l.z!=null);
-  if(LAST_GRIB_QUORUM){
-    tropoZ2=LAST_GRIB_QUORUM.z; tropohPa2=null;
-    tropoZ2Source=`grib-${LAST_GRIB_QUORUM.n}fonti(${LAST_GRIB_QUORUM.ageH}h)${LAST_GRIB_QUORUM.runAgeDiscarded?`[${LAST_GRIB_QUORUM.runAgeDiscarded}scartato-run-vecchio]`:''}`;
+  const gribHit=gribTropoAt(new Date(h.time[i]).getTime());
+  if(gribHit){
+    tropoZ2=gribHit.z; tropohPa2=gribHit.hPa;
+    tropoZ2Source=`grib-${gribHit.n}fonti(${gribHit.models.join('+')})`;
   } else {
   const tropoQuorum=tropoQuorumEstimate(i);
   if(tropoQuorum){
@@ -3641,55 +3652,74 @@ const TROPO_GRIB_STALE_H=10;
 // convettivi diurni estremi, e lascia comunque livelli a sufficienza
 // (500/400/300/250/200/150/100/50hPa lato ECMWF) per l'interpolazione.
 const TROPO_GRIB_MIN_HPA=500;
-// FIX (28/08/2026, richiesto dall'operatore) — il quorum a due
-// (GFS+ECMWF, 50/50 pesato per risoluzione) ha senso solo se i due
-// profili sono ANALISI dello stesso istante fisico. Se i run distano più
-// di questa soglia, non sono comparabili (uno racconta l'atmosfera di
-// un'ora diversa dall'altro) — si scarta il più vecchio e si usa solo il
-// più recente come fonte singola (n=1), invece di mediare due istantanee
-// prese in momenti diversi.
+// FIX round77 (29/08/2026, operatore+assistente) — RISCRITTURA: prima la
+// pipeline pubblicava un solo istante (fxx=0, un'ANALISI) trattato come
+// valore costante per l'intera finestra di previsione 0-12h — un singolo
+// scatto fotografico riusato identico per 13 ore, mentre una vera
+// tropopausa si sposta nel tempo (trovato dall'operatore: valori
+// identici al metro per 10 ore consecutive nel dev log). Ora la pipeline
+// pubblica una SERIE (GFS orario fxx 0-12, ECMWF trioraria fxx 0,3,6,9,12
+// — il massimo che ECMWF offre in questa finestra, verificato dal vivo).
 const TROPO_GRIB_MAX_RUN_AGE_DIFF_H=1;
-let LAST_GRIB_QUORUM=null; // popolato da refreshTropoGribQuorum() ad ogni lancio, letto sincrono da calcTropo()
+let LAST_GRIB_HOURLY=null; // {gfs:[{fxx,validISO,validMs,z,hPa,nLevels}...], ecmwf:[...], ageH} popolato da refreshTropoGribQuorum() ad ogni lancio, letto sincrono da gribTropoAt()
 
-// È un'ANALISI (fxx=0 nella pipeline, non una previsione) — un singolo
-// istante nel tempo, non una serie oraria come il quorum Open-Meteo.
-// Per questo il valore risultante è trattato come COSTANTE finché fresco
-// (stesso principio già usato per l'ancora radiosonda: un'osservazione
-// puntuale, rinnovata dalla pipeline esterna invece che ricalcolata per
-// ogni ora di previsione dentro calcTropo()).
-// FIX (28/08/2026, richiesto dall'operatore) — selezione fonti GRIB per
-// coerenza d'età, estratta come funzione pura (testabile senza mock di
-// fetch/Date) da quella che prima era logica inline dentro
-// refreshTropoGribQuorum. Il quorum a due (GFS+ECMWF) si attiva SOLO se
-// entrambi i run hanno la stessa età (scarto ≤maxDiffH): altrimenti si
-// scarta il run più vecchio e si procede a fonte singola col più recente
-// — mai una media tra due istanti fisici diversi. `raw` è l'array
-// {model,runMs,...} già filtrato a monte (fonti con livelli e runISO
-// validi); se raw.length!==2 (0 o 1 fonte) non c'è nulla da confrontare,
-// ritorna raw invariato.
-function selectGribSourcesByAge(raw,maxDiffH){
-  if(raw.length!==2)return{usable:raw,discarded:null};
-  const [a,b]=raw;
-  const deltaH=Math.abs(a.runMs-b.runMs)/3600000;
-  if(deltaH<=maxDiffH)return{usable:raw,discarded:null};
-  const fresh=a.runMs>b.runMs?a:b, stale=a.runMs>b.runMs?b:a;
-  return{usable:[fresh],discarded:stale.model,deltaH};
+// FIX round77 — lookup per una specifica ora (targetMs = timestamp
+// dell'ora di previsione richiesta, non "adesso"). Architettura decisa
+// dall'operatore: GFS è il modello PRIMARIO (orario, copre ogni ora da
+// solo) — se presente per quest'ora, vince sempre. ECMWF si combina con
+// GFS solo quando ENTRAMBI hanno un dato genuino (non interpolato) sulla
+// stessa identica ora (stesso principio round74, applicato ora per ora
+// invece che una volta per lancio) — non si media mai un dato vero con
+// uno interpolato. Se GFS manca per quest'ora, ECMWF prende il suo posto:
+// se ha un'ancora vera su quell'ora esatta la usa diretta, altrimenti
+// INTERPOLA linearmente tra le due ancore reali più vicine che la
+// racchiudono (statisticamente più solido di un decadimento verso il
+// quorum: con la serie già scaricata per intero, il "futuro" non è
+// ignoto, è già in mano — interpolare tra due punti reali batte
+// estrapolare da uno solo). Ritorna null se nessuna delle due fonti copre
+// quest'ora: il chiamante ricade sul quorum Open-Meteo a 4 modelli.
+function gribTropoAt(targetMs){
+  const g=LAST_GRIB_HOURLY; if(!g)return null;
+  const gfsHit=(g.gfs||[]).find(f=>f.validMs===targetMs);
+  const ecmwfExact=(g.ecmwf||[]).find(f=>f.validMs===targetMs);
+  if(gfsHit){
+    if(ecmwfExact){
+      const median=weightedMedian([{z:gfsHit.z,weight:gfsHit.nLevels},{z:ecmwfExact.z,weight:ecmwfExact.nLevels}]);
+      return{z:median,hPa:null,n:2,models:[`gfs(${gfsHit.nLevels}liv)`,`ecmwf(${ecmwfExact.nLevels}liv,anchor)`],note:'gfs+ecmwf stessa ora'};
+    }
+    return{z:gfsHit.z,hPa:gfsHit.hPa,n:1,models:[`gfs(${gfsHit.nLevels}liv)`],note:'solo gfs'};
+  }
+  if(ecmwfExact){
+    return{z:ecmwfExact.z,hPa:ecmwfExact.hPa,n:1,models:[`ecmwf(${ecmwfExact.nLevels}liv,anchor)`],note:'solo ecmwf, ancora vera'};
+  }
+  const sorted=(g.ecmwf||[]).slice().sort((a,b)=>a.validMs-b.validMs);
+  const prev=sorted.filter(f=>f.validMs<targetMs).pop();
+  const next=sorted.find(f=>f.validMs>targetMs);
+  if(prev&&next){
+    const frac=(targetMs-prev.validMs)/(next.validMs-prev.validMs);
+    return{z:Math.round(prev.z+frac*(next.z-prev.z)),hPa:null,n:1,models:[`ecmwf(interp ${prev.validISO.slice(11,16)}Z-${next.validISO.slice(11,16)}Z)`],note:'solo ecmwf, interpolato tra due ancore reali'};
+  }
+  return null;
 }
 // FIX round 75 (28/08/2026, operatore+assistente) — "tutte queste
 // dinamiche devono essere loggate, adesso non lo sono": ogni uscita di
-// questa funzione (fetch fallito, JSON scaduto, run scartato per
-// disallineamento d'età, nessuna stima trovata, successo) passava solo
-// per console.warn — invisibile nel dev log copiabile e nella sezione
-// FONTI INTERROGATE, esattamente il punto cieco che il round69 doveva
-// eliminare per TUTTE le fonti. setSrc passato come parametro (stesso
-// schema già usato per computeQuorum48h(setSrc) e, in una versione
-// precedente di questa stessa funzione, round74) — non raggiungibile
-// altrimenti, è una const locale di loadAll().
+// questa funzione (fetch fallito, JSON scaduto, nessuna ora scansionabile,
+// successo) passava solo per console.warn — invisibile nel dev log
+// copiabile e nella sezione FONTI INTERROGATE, esattamente il punto cieco
+// che il round69 doveva eliminare per TUTTE le fonti. setSrc passato come
+// parametro (stesso schema già usato per computeQuorum48h(setSrc)) — non
+// raggiungibile altrimenti, è una const locale di loadAll().
+// FIX round77 (29/08/2026, operatore+assistente) — riscritta per la nuova
+// pipeline a serie oraria/trioraria (forecasts[] invece di levels[]
+// singolo): scansiona OGNI voce della serie con scanLapseTropopause,
+// popola LAST_GRIB_HOURLY (letto poi ora per ora da gribTropoAt() dentro
+// calcTropo). Il JSON è ora molto più grande (13+5 voci invece di 1),
+// timeout fetch alzato da 10s a 15s per margine.
 async function refreshTropoGribQuorum(setSrc){
   try{
-    const resp=await fetch(TROPO_GRIB_URL,{signal:AbortSignal.timeout(10000)});
+    const resp=await fetch(TROPO_GRIB_URL,{signal:AbortSignal.timeout(15000)});
     if(!resp.ok){
-      LAST_GRIB_QUORUM=null;
+      LAST_GRIB_HOURLY=null;
       setSrc('grib',false,`GRIB tropopausa: ✗ fetch fallito (HTTP ${resp.status})`);
       return;
     }
@@ -3697,62 +3727,39 @@ async function refreshTropoGribQuorum(setSrc){
     const ageH=(Date.now()-new Date(data.generatedISO).getTime())/3600000;
     if(!(ageH<TROPO_GRIB_STALE_H)){
       setSrc('grib',false,`GRIB tropopausa: ✗ dato troppo vecchio (${ageH.toFixed(1)}h) — ricado sul quorum Open-Meteo`);
-      LAST_GRIB_QUORUM=null;return;
+      LAST_GRIB_HOURLY=null;return;
     }
-    // Raccolta grezza: solo fonti con livelli E un runISO valido (senza
-    // runISO non è possibile verificare la coerenza d'età richiesta sotto,
-    // quindi si tratta come fonte assente piuttosto che rischiare di
-    // mediarla comunque).
-    const raw=[];
-    for(const src of['gfs','ecmwf']){
-      const entry=data[src];
-      if(!entry?.levels?.length||!entry.runISO)continue;
-      const runMs=new Date(entry.runISO).getTime();
-      if(Number.isNaN(runMs))continue;
-      raw.push({model:src,entry,runMs});
-    }
-    if(raw.length===0){
-      LAST_GRIB_QUORUM=null;
-      setSrc('grib',false,'GRIB tropopausa: ✗ nessuna fonte con livelli/runISO validi questo giro');
-      return;
-    }
-    const{usable,discarded,deltaH}=selectGribSourcesByAge(raw,TROPO_GRIB_MAX_RUN_AGE_DIFF_H);
-    if(discarded){
-      setSrc('grib',true,`GRIB tropopausa: run distanti ${deltaH.toFixed(1)}h (>${TROPO_GRIB_MAX_RUN_AGE_DIFF_H}h) — scarto ${discarded} (più vecchio), uso solo ${usable[0].model}`);
-    }
-    const estimates=[];
-    for(const {model,entry} of usable){
-      const ls=entry.levels.map(l=>({hPa:l.hPa,t:l.tempC,z:l.z}));
-      const est=ls.length>=2?scanLapseTropopause(ls,TROPO_GRIB_MIN_HPA):null;
-      if(est)estimates.push({model,...est,nLevels:ls.length});
-    }
-    if(estimates.length<1){
-      LAST_GRIB_QUORUM=null;
-      setSrc('grib',false,`GRIB tropopausa: ✗ ${usable.length} fonte/i disponibili ma nessuna scansionabile (< 2 livelli utili sotto ${TROPO_GRIB_MIN_HPA}hPa)`);
-      return;
-    }
-    // Con solo 2 fonti possibili (non le 4-7 del quorum Open-Meteo), non
-    // richiediamo un minimo di 2 per considerare il dato utilizzabile:
-    // anche una sola fonte GRIB (analisi diretta, risoluzione nativa) è
-    // comunque più affidabile del quorum Open-Meteo — ma resta etichettata
-    // per quello che è (n:1), mai spacciata per un quorum a 2/2 se una
-    // delle due fonti è mancante quel giro (o è stata scartata per
-    // disallineamento d'età, vedi sopra).
-    const median=estimates.length>=2
-      ?weightedMedian(estimates.map(e=>({z:e.z,weight:e.nLevels})))
-      :estimates[0].z;
-    const zs=estimates.map(e=>e.z).sort((a,b)=>a-b);
-    LAST_GRIB_QUORUM={
-      z:median,n:estimates.length,ageH:Math.round(ageH*10)/10,
-      spread:estimates.length>=2?zs[zs.length-1]-zs[0]:0,
-      models:estimates.map(e=>`${e.model}(${e.nLevels}liv)`),
-      runAgeDiscarded:discarded, // FIX 28/08 — nome del modello scartato per disallineamento d'età, null se non applicabile
+    // Scansiona ogni voce di forecasts[] con la stessa scanLapseTropopause
+    // (floor 500hPa incluso) già usata per la vecchia analisi singola —
+    // stessa funzione, applicata N volte invece di 1. Voci senza livelli
+    // sufficienti (<2) sono scartate silenziosamente qui (non sono un
+    // errore della fonte, sono singole ore prive di dato in quella
+    // specifica voce — l'errore aggregato, se la serie intera è vuota, è
+    // gestito sotto).
+    const scanSeries=(entry)=>{
+      if(!entry?.forecasts?.length)return[];
+      return entry.forecasts.map(f=>{
+        if(!f.levels?.length)return null;
+        const ls=f.levels.map(l=>({hPa:l.hPa,t:l.tempC,z:l.z}));
+        const est=ls.length>=2?scanLapseTropopause(ls,TROPO_GRIB_MIN_HPA):null;
+        if(!est)return null;
+        const validMs=new Date(f.validISO).getTime();
+        if(Number.isNaN(validMs))return null;
+        return{fxx:f.fxx,validISO:f.validISO,validMs,z:est.z,hPa:est.hPa,nLevels:ls.length};
+      }).filter(Boolean);
     };
-    if(!discarded){
-      setSrc('grib',true,`GRIB tropopausa: ✓ ${estimates.map(e=>`${e.model}(${e.nLevels}liv)`).join('+')} — z=${Math.round(median)}m`);
+    const gfsSeries=scanSeries(data.gfs);
+    const ecmwfSeries=scanSeries(data.ecmwf);
+    if(gfsSeries.length===0&&ecmwfSeries.length===0){
+      LAST_GRIB_HOURLY=null;
+      setSrc('grib',false,'GRIB tropopausa: ✗ nessuna ora scansionabile in nessuna delle due fonti (< 2 livelli utili per voce, o serie assente)');
+      return;
     }
+    LAST_GRIB_HOURLY={gfs:gfsSeries,ecmwf:ecmwfSeries,ageH:Math.round(ageH*10)/10};
+    const gfsTot=data.gfs?.forecasts?.length??0, ecmwfTot=data.ecmwf?.forecasts?.length??0;
+    setSrc('grib',true,`GRIB tropopausa: ✓ gfs ${gfsSeries.length}/${gfsTot} ore, ecmwf ${ecmwfSeries.length}/${ecmwfTot} ore (dato ${ageH.toFixed(1)}h fa)`);
   }catch(e){
-    LAST_GRIB_QUORUM=null;
+    LAST_GRIB_HOURLY=null;
     setSrc('grib',false,`GRIB tropopausa: ✗ errore fetch/parsing (${e.message||e})`);
   }
 }
@@ -5309,7 +5316,7 @@ function bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd){
     if(parts.length)metarSentLine=`METAR SENTINELLE (cross-check): ${parts.join(' · ')}`;
   }
   return[
-`TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${now.tropo.doppiaTropo?` — MULTIPLA${now.tropo.tropos?.length>=2?` (${fmtTropoExtra(now.tropo.tropos)})`:''}`:''}`:'N/D'}`,
+`TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${now.tropo.doppiaTropo?(()=>{const ex=fmtTropoExtra(now.tropo.tropos);return` — MULTIPLA${ex?` (${ex})`:''}`;})():''}`:'N/D'}`,
 `CAPE: ${now.cape} J/kg | LI: ${now.li.toFixed(1)} K | CIN: ${ci} J/kg${cr&&ci<50?' ⚠ FRAGILE':''} | VIL: ${now.vil} kg/m²`,
 `JET 250hPa: ${Math.round(now.ws250)} km/h da ${Math.round(now.wd250)}°`,
 `ISOZERO: ${Math.round(now.freezing)} m | PBL: ${Math.round(now.blh)} m | H₂O col.: ${now.wv?.toFixed(1)} kg/m²`,
@@ -6688,16 +6695,23 @@ document.getElementById('hoursRows').innerHTML=hrs.slice(0,13).map((h,idx)=>{
     // in carattere ridotto subito sotto — mai al posto della primaria, solo
     // in aggiunta. Singola: rombo vuoto, discreto, stesso ingombro verticale
     // per non far "saltare" il layout della scheda a seconda dello stato.
-    // FIX round 52 (13/08/2026, operatore) — estesa da "solo secondaria" a
-    // N righe (una per ogni tropopausa oltre la primaria): nei sondaggi
-    // invernali capitano casi tripli/quadrupli, prima invisibili in questo
-    // badge perché il markup era scritto per una sola voce fissa (t.tropo2).
-    const extraRows=(t.tropos??[]).slice(1).map((tt,idx)=>{
+    // FIX round 76 (29/08/2026, operatore+assistente) — stesse soglie di
+    // fmtTropoExtra applicate qui: gapKm>5km omessa, tra 3-5km etichetta
+    // "bassa confidenza" visibile. Il conteggio "(N livelli)" ora riflette
+    // solo quelle effettivamente mostrate, non il totale grezzo rilevato
+    // dal sondaggio — altrimenti il numero non corrisponderebbe alle righe
+    // sotto. Se il filtro elimina tutte le secondarie, niente badge
+    // "multipla" vuoto: si ricade sul badge SINGOLA (la prima tropopausa,
+    // quella che conta per la logica, resta comunque mostrata sopra,
+    // invariata — questa soglia non la tocca mai).
+    const shownExtra=(t.tropos??[]).slice(1).filter(tt=>(tt.gapKm??0)<=5);
+    const extraRows=shownExtra.map((tt,idx)=>{
       const ord=TROPO_ORDINALI[idx]??`${idx+2}ª`;
-      return `<div style="font-size:10px;color:#7c6aa8;font-weight:700;margin-top:2px;letter-spacing:0">↳ ${ord} ${(tt.z/1000).toFixed(2)} km${tt.hPa!=null?' · '+tt.hPa+' hPa':''}</div>`;
+      const lowConf=(tt.gapKm??0)>3?' <span style="color:#eab308">⚠bassa confidenza</span>':'';
+      return `<div style="font-size:10px;color:#7c6aa8;font-weight:700;margin-top:2px;letter-spacing:0">↳ ${ord} ${(tt.z/1000).toFixed(2)} km${tt.hPa!=null?' · '+tt.hPa+' hPa':''}${lowConf}</div>`;
     }).join('');
-    const multiHtml=t.doppiaTropo
-      ?`<div style="font-size:9px;color:#a78bfa;letter-spacing:0.5px;margin-top:4px;line-height:1.4">◆ Rilevato fenomeno di tropopausa multipla${(t.tropos?.length??0)>2?` (${t.tropos.length} livelli)`:''}${extraRows}</div>`
+    const multiHtml=(t.doppiaTropo&&shownExtra.length>0)
+      ?`<div style="font-size:9px;color:#a78bfa;letter-spacing:0.5px;margin-top:4px;line-height:1.4">◆ Rilevato fenomeno di tropopausa multipla${shownExtra.length>1?` (${shownExtra.length+1} livelli)`:''}${extraRows}</div>`
       :`<div style="font-size:9px;color:#2a5068;letter-spacing:1px;margin-top:3px">◇ SINGOLA</div>`;
     return`<div class="tropo-val" style="color:${t.color}">${kmStr} km</div><div class="tropo-sub" style="color:${t.color}">VALVOLA ${t.valve} · ${hPaStr}</div>${multiHtml}${srcHtml}<div class="tropo-desc">${valveDesc}</div>${devHtml}${ttHtml}${stratHtml}`;
   })():'<div style="color:#2a5068;padding:16px">N/D</div>';
@@ -7247,12 +7261,12 @@ async function loadAll(){
     // hrs8 resta il sotto-insieme usato dalla Scheda 1 (Previsione 8-12h).
     // pipeline-GRIB — fetch della pipeline GRIB2 (GFS+ECMWF) PRIMA di
     // extractHours: calcTropo() (chiamata dentro extractHours per ogni
-    // ora) legge LAST_GRIB_QUORUM in modo sincrono, deve quindi essere
-    // già popolata a questo punto — stesso pattern già usato per
-    // LAST_QUORUM_RAW/computeQuorum48h qui sopra.
+    // ora) legge LAST_GRIB_HOURLY in modo sincrono tramite gribTropoAt(),
+    // deve quindi essere già popolata a questo punto — stesso pattern già
+    // usato per LAST_QUORUM_RAW/computeQuorum48h qui sopra.
     document.getElementById('loadingStep').textContent='🛰️ Profilo GRIB2 GFS+ECMWF...';
     try{ await refreshTropoGribQuorum(setSrc); }
-    catch(e){ console.warn('GRIB tropopausa: fetch fallito',e); LAST_GRIB_QUORUM=null; }
+    catch(e){ console.warn('GRIB tropopausa: fetch fallito',e); LAST_GRIB_HOURLY=null; }
     const hrs=extractHours(om,TIER_PREDIZIONE_MAX_H+1); // hrs48 nel resto del codice, ora copre fino a 96h+1
     // v9.3: applica override METAR all'ora corrente (Livello 1 > NWP)
     if(metarData.primary&&hrs.length>0){
@@ -7541,7 +7555,7 @@ function wmoTropopause(levels){
       if(lapseJ>2){ok=false;break;}
     }
     if(!ok)continue;
-    tropo1={hPa:levels[k].hPa, z:Math.round(levels[k].z), confirmed:true, kIdx:k};
+    tropo1={hPa:levels[k].hPa, z:Math.round(levels[k].z), confirmed:true, kIdx:k, gapKm:k>0?(levels[k].z-levels[k-1].z)/1000:0};
     break;
   }
   if(!tropo1) return null;
@@ -7586,7 +7600,7 @@ function wmoTropopause(levels){
         if(lapseJ>2){ok=false;break;}
       }
       if(!ok)continue;
-      nextTropo={hPa:levels[k].hPa, z:Math.round(levels[k].z), kIdx:k};
+      nextTropo={hPa:levels[k].hPa, z:Math.round(levels[k].z), kIdx:k, gapKm:(levels[k].z-levels[k-1].z)/1000};
       break;
     }
     if(!nextTropo)break;
@@ -7597,7 +7611,16 @@ function wmoTropopause(levels){
     hPa:tropo1.hPa, z:tropo1.z, confirmed:true,
     doppiaTropo: tropos.length>=2,
     tropo2: tropos[1]??null,
-    tropos: tropos.map(t=>({hPa:t.hPa,z:t.z})),
+    // FIX round 76 (29/08/2026, operatore+assistente) — gapKm propagato per
+    // ogni tropopausa rilevata: distanza (km) dal livello precedente nel
+    // sondaggio nel punto esatto di rilevazione. Usato a valle (extraRows/
+    // multiHtml/fmtTropoExtra) per etichettare "bassa confidenza" tra 3 e
+    // 5km e sopprimere del tutto oltre 5km — solo per la seconda/terza
+    // tropopausa mostrata come annotazione informativa (badge MULTIPLA),
+    // MAI per tropo1: quella alimenta la logica operativa (valvola, gate
+    // CAPE) e resta sempre quella misurata/calcolata con più cura
+    // possibile, indipendentemente da gapKm.
+    tropos: tropos.map(t=>({hPa:t.hPa,z:t.z,gapKm:Math.round((t.gapKm??0)*10)/10})),
   };
 }
 
