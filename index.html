@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta3 round31 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9beta3 round32 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -470,7 +470,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <pre class="pre-bf" id="devLogText">—</pre>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round31</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round32</div>
 
 </div>
 <script>
@@ -566,7 +566,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 //   · FIX etichetta "EUMETSAT MTG"→"EUMETSAT MSG+MTG" nella riga Fonte:
 //     del briefing (bug reale: il conteggio 3/3 sommava 2 fetch MSG +
 //     1 fetch MTG sotto un'unica etichetta sbagliata).
-const APP_VERSION='Belardo_v9.9beta3 round31';
+const APP_VERSION='Belardo_v9.9beta3 round32';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -1181,6 +1181,39 @@ async function ensureGeoTIFFLib(){
   return window.GeoTIFF;
 }
 
+// ROUND 66 (31/08/2026, richiesto dall'operatore) — caricatore proj4,
+// stesso schema già usato per geotiff.js sopra.
+async function ensureProj4Lib(){
+  if(window.proj4)return window.proj4;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/proj4@2/dist/proj4.js';
+    s.onload=res;
+    s.onerror=()=>rej(new Error('proj4.js non caricabile da CDN'));
+    document.head.appendChild(s);
+  });
+  if(!window.proj4)throw new Error('proj4.js caricato ma window.proj4 assente');
+  return window.proj4;
+}
+
+// ROUND 66 (31/08/2026) — Traduce le GeoKeys embedded nel GeoTIFF in una
+// stringa di definizione proj4. Supportiamo per ora SOLO Transverse
+// Mercator (ProjCoordTransGeoKey===1): è l'unica proiezione osservata sui
+// prodotti VMI/SRT1 di DPC, verificata il 31/08/2026 (centrata su
+// 12.5°E/42°N, vedi diagnostica in tests/diagnose_dpc_vmi_srt1.mjs). Se
+// in futuro DPC cambia proiezione, meglio sollevare un errore esplicito
+// che leggere silenziosamente il pixel sbagliato — è esattamente il tipo
+// di errore silenzioso che questo fix corregge.
+function proj4DefFromGeoKeys(geoKeys){
+  const ct=geoKeys?.ProjCoordTransGeoKey;
+  if(ct!==1)throw new Error(`GeoTIFF: ProjCoordTransGeoKey=${ct} non supportato (atteso 1=Transverse Mercator)`);
+  const lon0=geoKeys?.ProjNatOriginLongGeoKey, lat0=geoKeys?.ProjNatOriginLatGeoKey;
+  if(lon0==null||lat0==null)throw new Error('GeoTIFF: origine della proiezione (ProjNatOriginLong/LatGeoKey) mancante nelle GeoKeys');
+  const k0=geoKeys?.ProjScaleAtNatOriginGeoKey??1;
+  const x0=geoKeys?.ProjFalseEastingGeoKey??0, y0=geoKeys?.ProjFalseNorthingGeoKey??0;
+  return `+proj=tmerc +lat_0=${lat0} +lon_0=${lon0} +k=${k0} +x_0=${x0} +y_0=${y0} +ellps=WGS84 +units=m +no_defs`;
+}
+
 async function fetchDPCProduct(type,lat,lon){
   const GeoTIFF=await ensureGeoTIFFLib();
 
@@ -1207,21 +1240,67 @@ async function fetchDPCProduct(type,lat,lon){
 
   const tiff=await GeoTIFF.fromArrayBuffer(buf);
   const image=await tiff.getImage();
-  const[minLon,minLat,maxLon,maxLat]=image.getBoundingBox(); // georef embedded nel file, non un bbox scritto a mano
+  const[bx0,by0,bx1,by1]=image.getBoundingBox(); // nel sistema di riferimento NATIVO del file — vedi fix sotto
   const w=image.getWidth(),h=image.getHeight();
-  if(lon<minLon||lon>maxLon||lat<minLat||lat>maxLat){
-    throw new Error(`DPC ${type}: coordinate CV fuori dalla copertura del prodotto (bbox ${minLon},${minLat},${maxLon},${maxLat})`);
+
+  // FIX (31/08/2026, richiesto dall'operatore) — BUG TROVATO: qui si
+  // confrontava lat/lon direttamente col bounding box, assumendo fosse
+  // sempre in gradi WGS84. Verificato il 31/08/2026 (vedi diagnostica
+  // dedicata): i prodotti VMI/SRT1 di DPC dichiarano GTModelTypeGeoKey=1
+  // (modello PROIETTATO) con bbox in METRI su una Transverse Mercator
+  // centrata 12.5°E/42°N — non gradi. Confrontare 13.942/41.035 (gradi)
+  // con un bbox tipo [-600000,600000] (metri) non faceva mai scattare il
+  // controllo "fuori copertura" (13.9 sta comodamente dentro ±600000),
+  // ma il pixel calcolato cadeva sempre vicino al centro geometrico del
+  // raster — MAI su Castel Volturno — a prescindere dal meteo reale.
+  // Effetto visibile: VMI/SRT1 restituivano lo stesso valore identico a
+  // ogni lancio (era sempre lo stesso pixel sbagliato, non "sempre nessun
+  // eco su CV"). Confermato con un campionamento a griglia sull'intero
+  // raster (tests/diagnose_dpc_vmi_srt1.mjs): il file HA variazione
+  // spaziale reale altrove, solo il punto letto era quello sbagliato.
+  //
+  // Fix: si leggono le GeoKeys embedded nel file. Se il modello è
+  // PROIETTATO (GTModelTypeGeoKey===1), lat/lon vengono trasformate nel
+  // sistema nativo del file con proj4 PRIMA del confronto col bbox. Se
+  // invece il modello è GEOGRAFICO (===2, bbox già in gradi — nel caso
+  // DPC cambiasse formato in futuro), il confronto diretto resta valido
+  // così com'era: nessuna trasformazione applicata, comportamento
+  // invariato per quel caso.
+  const geoKeys=image.getGeoKeys?image.getGeoKeys():null;
+  const modelType=geoKeys?.GTModelTypeGeoKey;
+  let px0=lon,py0=lat; // coordinate da confrontare col bbox — default gradi, sovrascritte sotto se il file è proiettato
+  if(modelType===1){
+    const proj4=await ensureProj4Lib();
+    const def=proj4DefFromGeoKeys(geoKeys);
+    [px0,py0]=proj4(def).forward([lon,lat]);
+  } else if(modelType!==2){
+    throw new Error(`DPC ${type}: GTModelTypeGeoKey=${modelType} non gestito (atteso 1=proiettato o 2=geografico)`);
   }
-  const px=Math.min(w-1,Math.max(0,Math.floor((lon-minLon)/(maxLon-minLon)*w)));
-  const py=Math.min(h-1,Math.max(0,Math.floor((maxLat-lat)/(maxLat-minLat)*h))); // Y invertita: riga 0 = nord nel raster
+
+  if(px0<bx0||px0>bx1||py0<by0||py0>by1){
+    throw new Error(`DPC ${type}: coordinate CV fuori dalla copertura del prodotto (bbox ${bx0},${by0},${bx1},${by1}${modelType===1?' — metri, proiettato':' — gradi'})`);
+  }
+  const px=Math.min(w-1,Math.max(0,Math.floor((px0-bx0)/(bx1-bx0)*w)));
+  const py=Math.min(h-1,Math.max(0,Math.floor((by1-py0)/(by1-by0)*h))); // Y invertita: riga 0 = nord nel raster
   const raster=await image.readRasters({window:[px,py,px+1,py+1]});
   const rawVal=raster?.[0]?.[0]??null;
 
   const noData=image.getGDALNoData();
   const gdalMeta=image.getGDALMetadata?.()??null; // eventuali tag scale/offset, se presenti — solo diagnostica per ora
+  // FIX (31/08/2026) — getGDALNoData()/getGDALMetadata() sono risultati
+  // VUOTI sui file VMI/SRT1 reali (verificato in diagnostica): il file
+  // non dichiara il proprio NoData in nessuno dei due tag standard. I
+  // valori -9999/-9998 osservati nel campionamento a griglia sull'intero
+  // raster (mai altri interi tondi negativi, solo questi due) sono quasi
+  // certamente sentinelle proprietarie DPC (fuori copertura / sotto
+  // soglia) non dichiarate nei tag GDAL standard — ma non lo diamo per
+  // assodato: lo segnaliamo (suspectSentinel) senza scartare il dato, così
+  // l'operatore può osservare i valori reali di CV ora che il pixel è
+  // quello giusto, prima di decidere una soglia di scarto definitiva.
+  const suspectSentinel=rawVal!=null&&!Number.isNaN(rawVal)&&rawVal<=-9000;
   const hasValue=rawVal!=null&&!Number.isNaN(rawVal)&&!(noData!=null&&rawVal===noData);
 
-  return{productType:type,time:last.time,rawValue:hasValue?rawVal:null,hasValue,noData,gdalMeta,fileWidth:w,fileHeight:h,source:`DPC/${type}`};
+  return{productType:type,time:last.time,rawValue:hasValue?rawVal:null,hasValue,suspectSentinel,noData,gdalMeta,fileWidth:w,fileHeight:h,pixelXY:[px,py],source:`DPC/${type}`};
 }
 
 async function fetchDPCVMI(lat,lon){return fetchDPCProduct('VMI',lat,lon);}
@@ -7178,12 +7257,17 @@ async function loadAll(){
     try{
       dpcVMI=await fetchDPCVMI(CV.lat,CV.lon);
       console.log('DPC VMI (da calibrare):',dpcVMI);
-      setSrc('vmi',dpcVMI.hasValue,`VMI: ${dpcVMI.hasValue?dpcVMI.rawValue+' (grezzo)':'N/D'}`);
+      // FIX (31/08/2026) — pixelXY e suspectSentinel esposti nel dev log:
+      // il primo per verificare a colpo d'occhio che il pixel letto sia
+      // quello giusto (non più fisso a [600,649], vedi fix coordinate
+      // proiettate sopra), il secondo per segnalare senza scartare i
+      // valori che sembrano sentinelle DPC non dichiarate (≤-9000).
+      setSrc('vmi',dpcVMI.hasValue,`VMI: ${dpcVMI.hasValue?dpcVMI.rawValue+(dpcVMI.suspectSentinel?' [sospetta sentinella]':'')+' (grezzo)':'N/D'} @px${dpcVMI.pixelXY?.join(',')}`);
     }catch(e){console.warn('DPC VMI fail',e);setSrc('vmi',false,'VMI: N/D');}
     try{
       dpcSRT1=await fetchDPCSRT1(CV.lat,CV.lon);
       console.log('DPC SRT1 (da calibrare):',dpcSRT1);
-      setSrc('srt1',dpcSRT1.hasValue,`SRT1: ${dpcSRT1.hasValue?dpcSRT1.rawValue+' (grezzo)':'N/D'}`);
+      setSrc('srt1',dpcSRT1.hasValue,`SRT1: ${dpcSRT1.hasValue?dpcSRT1.rawValue+(dpcSRT1.suspectSentinel?' [sospetta sentinella]':'')+' (grezzo)':'N/D'} @px${dpcSRT1.pixelXY?.join(',')}`);
     }catch(e){console.warn('DPC SRT1 fail',e);setSrc('srt1',false,'SRT1: N/D');}
     // v9.9beta: SATELLITE EUMETSAT — vista ampia, solo informativo in questa
     // versione (non corregge punteggi). Best-effort: se fallisce non blocca
