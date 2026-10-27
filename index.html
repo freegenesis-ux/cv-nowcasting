@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta3 round37 — Castel Volturno</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Nowcasting CV Belardo_v9.9beta3 round38 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -108,6 +108,27 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 .sst-center{text-align:center;padding:12px 0;}.sst-val{font-size:42px;font-weight:700;}.sst-sub{font-size:12px;margin-top:5px;}
 .error{background:rgba(239,68,68,.08);border:1px solid #ef4444;border-radius:8px;padding:12px;color:#fca5a5;font-size:11px;margin-bottom:12px;display:none;}
 .footer{text-align:center;font-size:9px;color:#0e1c2c;margin-top:16px;padding-top:10px;border-top:1px solid #0a1520;line-height:1.8;}
+
+
+/* Tema mobile Android — solo presentazione; logica e dati invariati. */
+html{color-scheme:dark;-webkit-text-size-adjust:100%;}
+body{overscroll-behavior:contain;-webkit-tap-highlight-color:transparent;}
+@media (max-width:820px){
+  body{padding:10px 10px calc(98px + env(safe-area-inset-bottom,0px));background:radial-gradient(circle at 50% -12%,#10253a 0,#060d18 42%);}
+  .wrap{max-width:none;}
+  .hdr{position:relative;margin:-10px -10px 10px;padding:12px 12px 10px;background:rgba(7,16,28,.92);border-bottom:1px solid #16304a;}
+  .hdr h1{font-size:17px;letter-spacing:.1px;}.hdr .sub{font-size:9px;letter-spacing:3px;color:#4a8090;}.hdr .ts{font-size:9px;}
+  .btn-refresh{width:42px;height:42px;padding:0;border-radius:12px;font-size:0;display:grid;place-items:center;background:rgba(74,127,160,.10);border-color:#234967;}
+  .btn-refresh::before{content:'↻';font-size:21px;line-height:1;}
+  .src-bar{gap:5px;margin-bottom:10px;}.src-badge{font-size:8px;padding:3px 6px;letter-spacing:.8px;}
+  .card{padding:13px 14px;border-color:#14263a;background:rgba(10,19,32,.78);box-shadow:0 8px 24px rgba(0,0,0,.10);}
+  .wx-card{padding:19px 15px;border:1px solid #0f4e54;background:rgba(5,35,39,.58);}.wx-label{font-size:19px;}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;margin:0;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(7,16,28,.99);border-top:1px solid #24425c;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+  .tab-btn{min-height:64px;padding:6px 2px;border:1px solid transparent;border-radius:13px;font-size:0;letter-spacing:0;display:flex;align-items:center;justify-content:center;color:#7894aa;transition:background .18s ease,color .18s ease;}
+  .tab-btn::after{font-size:11px;font-weight:600;letter-spacing:.2px;line-height:1.45;white-space:pre;}
+  .tab-btn:nth-child(1)::after{content:'☁\A Oggi';}.tab-btn:nth-child(2)::after{content:'⚡\A Estremi';}.tab-btn:nth-child(3)::after{content:'◌\A Driver';}.tab-btn:nth-child(4)::after{content:'◉\A 48h';}.tab-btn:nth-child(5)::after{content:'⌘\A Incroci';}
+  .tab-btn.active{background:#10324a;color:#8ed9ff;border-color:#245b7d;box-shadow:0 0 0 1px rgba(96,192,240,.08) inset;}.footer{display:none;}
+}
 </style>
 </head>
 <body>
@@ -470,7 +491,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <pre class="pre-bf" id="devLogText">—</pre>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round37</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round38</div>
 
 </div>
 <script>
@@ -566,7 +587,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 //   · FIX etichetta "EUMETSAT MTG"→"EUMETSAT MSG+MTG" nella riga Fonte:
 //     del briefing (bug reale: il conteggio 3/3 sommava 2 fetch MSG +
 //     1 fetch MTG sotto un'unica etichetta sbagliata).
-const APP_VERSION='Belardo_v9.9beta3 round37';
+const APP_VERSION='Belardo_v9.9beta3 round38';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -2622,12 +2643,26 @@ function calcTropo(i,h){
   // FIX round 19bis — isRadiosonda estesa alle due sorgenti Trapani: per
   // scelta operatore, doppiaTropo/tropo2/tropos restano attivi con lo stesso
   // trattamento della fonte Roma anche quando l'ancora viene dal paracadute.
-  const isRadiosonda=source==='radiosonda'||source==='radiosonda-p2su2atropo'||source==='radiosonda-trapani'||source==='radiosonda-trapani-p2su2atropo';
+  // FIX (26/10/2026, operatore+assistente) — BUG TROVATO sul briefing delle
+  // 07:09 (round37): la whitelist esplicita qui sotto NON includeva le due
+  // sorgenti 'radiosonda-p2incoerente' e 'radiosonda-trapani-p2incoerente',
+  // introdotte con la patch "P2 incoerente" del 28/08. In quel ramo tropoZ è
+  // calcolato DAVVERO dalla sonda (P1 pesato con la climatologia), ma
+  // isRadiosonda risultava false → il briefing scriveva "stimata", il badge
+  // del pannello cadeva sul generico "STIMATA", e tutto ciò che è gated da
+  // isRadiosonda veniva azzerato: P1 (p1Raw) n/d, pesoSonda 0, età ancora
+  // null, tropopause multiple (doppiaTropo/tropos) nascoste. Il dato era
+  // ancorato alla sonda; erano etichette e diagnostica a dire il contrario.
+  // Fix strutturale: ogni sorgente che nasce dal Percorso 1 si chiama
+  // 'radiosonda…' per costruzione, quindi si testa il prefisso invece di una
+  // lista da aggiornare a mano ad ogni nuovo ramo — è esattamente la
+  // dimenticanza che ha prodotto questo bug.
+  const isRadiosonda=typeof source==='string'&&source.startsWith('radiosonda');
   // lowConfidence: solo per segnalare in UI/briefing che il dato viene dal
   // paracadute Trapani (bassa affidabilità per la grande dispersione
   // giorno-per-giorno vs Roma, vedi nota RS_STATION_ID_TRAPANI) — non altera
   // in alcun modo valvola, convFactor o deroga CAPE-estremo, usati tal quali.
-  const lowConfidence=isRadiosonda&&(source==='radiosonda-trapani'||source==='radiosonda-trapani-p2su2atropo');
+  const lowConfidence=isRadiosonda&&source.includes('trapani');
   const doppiaTropo=(anchorFresh&&isRadiosonda)?!!anchor.doppiaTropo:false;
   const tropo2=(doppiaTropo&&anchor.tropo2z!=null)?{hPa:anchor.tropo2hPa??null,z:anchor.tropo2z}:null;
   // FIX round 52 — array completo delle tropopause note (fino a N, non solo
@@ -5482,7 +5517,7 @@ function bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd){
     if(parts.length)metarSentLine=`METAR SENTINELLE (cross-check): ${parts.join(' · ')}`;
   }
   return[
-`TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${now.tropo.doppiaTropo?(()=>{const ex=fmtTropoExtra(now.tropo.tropos);return` — MULTIPLA${ex?` (${ex})`:''}`;})():''}`:'N/D'}`,
+`TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${/p2incoerente$/.test(now.tropo.source??'')?' (GRIB/quorum scartato: disaccordo >1.8 km dalla sonda)':''}${now.tropo.doppiaTropo?(()=>{const ex=fmtTropoExtra(now.tropo.tropos);return` — MULTIPLA${ex?` (${ex})`:''}`;})():''}`:'N/D'}`,
 `CAPE: ${qcNow.cape} J/kg | LI: ${qcNow.li.toFixed(1)} K | CIN: ${ci} J/kg${cr&&ci<50?' ⚠ FRAGILE':''} | VIL: ${now.vil} kg/m²`,
 `JET 250hPa: ${Math.round(now.ws250)} km/h da ${Math.round(now.wd250)}°`,
 `ISOZERO: ${Math.round(now.freezing)} m | PBL: ${Math.round(now.blh)} m | H₂O col.: ${now.wv?.toFixed(1)} kg/m²`,
@@ -6869,6 +6904,8 @@ document.getElementById('hoursRows').innerHTML=hrs.slice(0,13).map((h,idx)=>{
       'radiosonda-p2su2atropo':{lbl:`🎈 RECUPERATA · radiosonda RS 16245 (${t.anchorRealAgeH}h fa) — P2 scartato: agganciata una tropopausa nota diversa dalla primaria, round52`,c:'#22c55e'},
       'radiosonda-trapani':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (Roma 16245 non disponibile, ${t.anchorRealAgeH}h fa) — bassa affidabilità`,c:'#eab308'},
       'radiosonda-trapani-p2su2atropo':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (${t.anchorRealAgeH}h fa) — bassa affidabilità, P2 scartato: tropopausa nota diversa dalla primaria`,c:'#eab308'},
+      'radiosonda-p2incoerente':{lbl:`🎈 RECUPERATA · radiosonda RS 16245 (${t.anchorRealAgeH}h fa) — GRIB/quorum scartato: disaccordo >1.8 km dalla sonda e nessuna tropopausa nota lo spiega`,c:'#22c55e'},
+      'radiosonda-trapani-p2incoerente':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (${t.anchorRealAgeH}h fa) — bassa affidabilità, GRIB/quorum scartato: disaccordo >1.8 km dalla sonda`,c:'#eab308'},
       'stima-6liv':{lbl:'📊 STIMATA · profilo NWP 6 livelli',c:'#eab308'},
       'stima-6liv-incoerente':{lbl:'📊 STIMATA · profilo NWP 6 livelli (radiosonda scartata: incoerente >1800m)',c:'#eab308'},
       'stima-climatologica':{lbl:'📐 STIMATA · climatologia (profilo non disponibile)',c:'#f97316'}
