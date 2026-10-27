@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Nowcasting CV Belardo_v9.9beta3 round38 — Castel Volturno</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nowcasting CV Belardo_v9.9beta3 round39 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -108,27 +108,6 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 .sst-center{text-align:center;padding:12px 0;}.sst-val{font-size:42px;font-weight:700;}.sst-sub{font-size:12px;margin-top:5px;}
 .error{background:rgba(239,68,68,.08);border:1px solid #ef4444;border-radius:8px;padding:12px;color:#fca5a5;font-size:11px;margin-bottom:12px;display:none;}
 .footer{text-align:center;font-size:9px;color:#0e1c2c;margin-top:16px;padding-top:10px;border-top:1px solid #0a1520;line-height:1.8;}
-
-
-/* Tema mobile Android — solo presentazione; logica e dati invariati. */
-html{color-scheme:dark;-webkit-text-size-adjust:100%;}
-body{overscroll-behavior:contain;-webkit-tap-highlight-color:transparent;}
-@media (max-width:820px){
-  body{padding:10px 10px calc(98px + env(safe-area-inset-bottom,0px));background:radial-gradient(circle at 50% -12%,#10253a 0,#060d18 42%);}
-  .wrap{max-width:none;}
-  .hdr{position:relative;margin:-10px -10px 10px;padding:12px 12px 10px;background:rgba(7,16,28,.92);border-bottom:1px solid #16304a;}
-  .hdr h1{font-size:17px;letter-spacing:.1px;}.hdr .sub{font-size:9px;letter-spacing:3px;color:#4a8090;}.hdr .ts{font-size:9px;}
-  .btn-refresh{width:42px;height:42px;padding:0;border-radius:12px;font-size:0;display:grid;place-items:center;background:rgba(74,127,160,.10);border-color:#234967;}
-  .btn-refresh::before{content:'↻';font-size:21px;line-height:1;}
-  .src-bar{gap:5px;margin-bottom:10px;}.src-badge{font-size:8px;padding:3px 6px;letter-spacing:.8px;}
-  .card{padding:13px 14px;border-color:#14263a;background:rgba(10,19,32,.78);box-shadow:0 8px 24px rgba(0,0,0,.10);}
-  .wx-card{padding:19px 15px;border:1px solid #0f4e54;background:rgba(5,35,39,.58);}.wx-label{font-size:19px;}
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;margin:0;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(7,16,28,.99);border-top:1px solid #24425c;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-  .tab-btn{min-height:64px;padding:6px 2px;border:1px solid transparent;border-radius:13px;font-size:0;letter-spacing:0;display:flex;align-items:center;justify-content:center;color:#7894aa;transition:background .18s ease,color .18s ease;}
-  .tab-btn::after{font-size:11px;font-weight:600;letter-spacing:.2px;line-height:1.45;white-space:pre;}
-  .tab-btn:nth-child(1)::after{content:'☁\A Oggi';}.tab-btn:nth-child(2)::after{content:'⚡\A Estremi';}.tab-btn:nth-child(3)::after{content:'◌\A Driver';}.tab-btn:nth-child(4)::after{content:'◉\A 48h';}.tab-btn:nth-child(5)::after{content:'⌘\A Incroci';}
-  .tab-btn.active{background:#10324a;color:#8ed9ff;border-color:#245b7d;box-shadow:0 0 0 1px rgba(96,192,240,.08) inset;}.footer{display:none;}
-}
 </style>
 </head>
 <body>
@@ -491,7 +470,7 @@ body{overscroll-behavior:contain;-webkit-tap-highlight-color:transparent;}
   <pre class="pre-bf" id="devLogText">—</pre>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round38</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta3 round39</div>
 
 </div>
 <script>
@@ -587,7 +566,7 @@ body{overscroll-behavior:contain;-webkit-tap-highlight-color:transparent;}
 //   · FIX etichetta "EUMETSAT MTG"→"EUMETSAT MSG+MTG" nella riga Fonte:
 //     del briefing (bug reale: il conteggio 3/3 sommava 2 fetch MSG +
 //     1 fetch MTG sotto un'unica etichetta sbagliata).
-const APP_VERSION='Belardo_v9.9beta3 round38';
+const APP_VERSION='Belardo_v9.9beta3 round39';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
