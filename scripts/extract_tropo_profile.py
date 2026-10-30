@@ -129,6 +129,34 @@ ECMWF_FXX_SERIES = [0, 3, 6, 9, 12, 15, 18, 21, 24]
 
 PRIORITY_BY_MODEL = {'gfs': ['aws'], 'ifs': ['google'], 'ecmwf': ['google']}
 
+# FIX (29/10/2026, operatore+assistente) — ECMWF spariva da ~28/10 con
+# "FileNotFoundError ...-oper-fc-sfc.grib2" su TUTTI i passi (ecmwf 0/0 ore).
+# Causa: lo script installa `herbie-data` senza versione fissa e la release
+# 2026.10.0 (uscita il 27/10/2026 04:25 UTC) ha cambiato il default ECMWF:
+# per i cicli dal 20/10/2026 usa la risoluzione 0p1, i cui file sono SPLIT in
+# "-sfc" (default) e "-pl". La nostra ricerca (:(t|gh):\d+:, livelli di
+# pressione) cadeva quindi nel file "-sfc", dove non esiste → nessun
+# sottoinsieme scritto → FileNotFoundError all'apertura.
+# Verificato dal vivo da Termux il 29/10 sugli indici del mirror google
+# (cicli 00z e 12z del 28/10): 0p1-sfc → 0 messaggi t/gh a livelli di
+# pressione; 0p25 (file unico) → 28; 0p1-pl → 28; stessi 14 livelli
+# (1000…10 hPa) in entrambi. Fix: si chiede ESPLICITAMENTE 0p25, cioè il
+# layout con cui tutto funzionava fino al 26/10, indipendente dal default di
+# Herbie. Herbie onora un `resolution` passato esplicitamente (il default
+# viene applicato solo se l'attributo manca). GFS non è toccato.
+EXTRA_KWARGS_BY_MODEL = {
+    'ecmwf': {'resolution': '0p25'},
+    'ifs': {'resolution': '0p25'},
+}
+
+
+def _herbie_kwargs(model):
+    """Parametri aggiuntivi per Herbie() specifici del modello: priority
+    della fonte + eventuali override (es. resolution per ECMWF)."""
+    kw = {'priority': PRIORITY_BY_MODEL.get(model)}
+    kw.update(EXTRA_KWARGS_BY_MODEL.get(model, {}))
+    return kw
+
 
 def _resolve_cycle(model, product, target_cycle, max_stepback=2):
     """Trova il ciclo (00/06/12/18Z) più recente per cui fxx=0 è
@@ -137,10 +165,9 @@ def _resolve_cycle(model, product, target_cycle, max_stepback=2):
     quel modello userà questo stesso ciclo, per coerenza (vedi nota in
     testa al file, FIX round77). Ritorna il datetime del ciclo risolto, o
     None se anche l'ultimo tentativo di stepback non ha fxx=0 pubblicato."""
-    priority = PRIORITY_BY_MODEL.get(model)
     candidate = target_cycle
     for _ in range(max_stepback + 1):
-        H = Herbie(candidate, model=model, product=product, fxx=0, priority=priority)
+        H = Herbie(candidate, model=model, product=product, fxx=0, **_herbie_kwargs(model))
         if H.grib:
             return candidate
         candidate = candidate - timedelta(hours=6)
@@ -152,8 +179,7 @@ def _extract_one_fxx(model, product, search_string, cycle, fxx):
     (temps_by_level, heights_by_level) — dict vuoti se nessun livello
     trovato o il file non esiste per questo fxx specifico. Non solleva
     mai eccezioni verso il chiamante."""
-    priority = PRIORITY_BY_MODEL.get(model)
-    H = Herbie(cycle, model=model, product=product, fxx=fxx, priority=priority)
+    H = Herbie(cycle, model=model, product=product, fxx=fxx, **_herbie_kwargs(model))
     if not H.grib:
         return {}, {}
     ds = H.xarray(search_string, remove_grib=True)
