@@ -60,4 +60,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/tropo-grib-latest.json
           git diff --staged --quiet && echo "Nessuna modifica, skip commit" || git commit -m "Aggiorna profilo tropopausa GRIB2 [skip ci]"
-          git push
+          # round (16/11/2026): un run in coda parte dallo SHA del momento in cui e' stato accodato; se nel frattempo un altro run ha
+          # gia' pubblicato, il push viene rifiutato (non-fast-forward) e il job fallisce dopo l'estrazione. Si riallinea e si riprova.
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "push rifiutato, tentativo $i/3"; sleep 5
+          done
