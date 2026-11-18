@@ -296,10 +296,26 @@ def _native_surface(H, search):
     vals = {}
     for d in datasets:
         point = d.sel(latitude=CV_LAT, longitude=CV_LON, method="nearest")
-        for name in ("pres", "gh", "t"):
+        for name in ("pres", "trpp", "gh", "t"):
             v = _first_scalar(point, name)
             if v is not None:
                 vals[name] = v
+    # cfgrib chiama "trpp" la pressione del livello 'tropopause' (verificato 18/11: con 'pres' hPa restava null)
+    if "pres" not in vals and "trpp" in vals:
+        vals["pres"] = vals["trpp"]
+    if "pres" not in vals:
+        # ultima rete: qualunque altra variabile (non gh/t) con valore da pressione in Pa
+        for d in datasets:
+            point = d.sel(latitude=CV_LAT, longitude=CV_LON, method="nearest")
+            for name in list(point.data_vars):
+                if name in ("gh", "t"):
+                    continue
+                v = _first_scalar(point, name)
+                if v is not None and 1000.0 <= v <= 120000.0:
+                    vals["pres"] = v
+                    break
+            if "pres" in vals:
+                break
     if "gh" not in vals:
         return None
     return {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta4 round43 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9beta4 round44 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -486,7 +486,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <div id="histBox" style="font-size:12px;line-height:1.5">—</div>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta4 round43</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta4 round44</div>
 
 </div>
 <script>
@@ -591,7 +591,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9beta4 round43';
+const APP_VERSION='Belardo_v9.9beta4 round44';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -1680,33 +1680,46 @@ function recordDevLogLaunch(traces,lastUpdate){
 // (~500-970m, vedi validazioni P1/P2 in memoria pannello) — sopra questa
 // soglia è quasi certamente detector jitter, non fisica reale.
 const DEV_LOG_JUMP_M=1000;
-// round43 — qualificazione dei salti (SOLO LOG, modalità ombra). Soglie PROVVISORIE, da tarare con i dati raccolti.
+// round44 — qualificazione dei salti (SOLO LOG, modalità ombra). Soglie PROVVISORIE, da tarare con i dati raccolti.
+// Lezione dai primi dati reali (18/11, 13:15): GFS-nativa salta anch'essa (16.1→13.6 km tra due ore) perché il profilo ha DUE tropopause;
+// il salto del nostro calcolo era spesso il calcolo che si RICONGIUNGE alla nativa (scarto +2.8 km prima, +1 m dopo), non un artefatto.
+// Quindi non si chiede "il riferimento si muove come me?" ma "prima/dopo il salto, quanto distavo dal riferimento?".
 const SHADOW_NEAR_VALVE_M=1000;   // "zona valvola" = candidato sotto (soglia CHIUSA del mese + 1000 m); la soglia è stagionale, mai fissa
-const SHADOW_CONFIRM_FRAC=0.5;    // un riferimento "conferma" il salto se si muove nello stesso verso di almeno questa frazione
+const SHADOW_AGREE_M=500;         // |calcolo − riferimento| entro questo valore = in accordo
+const SHADOW_GAP_M=1000;          // oltre questo valore = in disaccordo netto
 function shadowLogLine(t,prev,dz){
   const sh=t.tropoShadow;
   if(!sh||(!sh.tr&&!sh.pv))return '    OMBRA (solo log, non entra nel calcolo): GFS-nativa/2PVU non disponibili per quest\'ora';
+  const ps=prev?.tropoShadow;
   const f=o=>o?`${Math.round(o.z)}m${o.hPa!=null?` (${o.hPa} hPa)`:''}`:'n/d';
-  const d=(a,b)=>(a!=null&&b!=null)?`${Math.round(a-b)>=0?'+':''}${Math.round(a-b)}m`:'n/d';
-  let out=`    OMBRA (solo log, non entra nel calcolo): GFS-nativa ${f(sh.tr)} · 2PVU ${f(sh.pv)} · calcolo−nativa ${d(t.tropoZ,sh.tr?.z)} · calcolo−2PVU ${d(t.tropoZ,sh.pv?.z)}`;
+  const sg=v=>v==null?'n/d':`${Math.round(v)>=0?'+':''}${Math.round(v)}m`;
+  const gap=(tt,ref)=>(tt?.tropoZ!=null&&ref?.z!=null)?tt.tropoZ-ref.z:null;
+  let out=`    OMBRA (solo log, non entra nel calcolo): GFS-nativa ${f(sh.tr)} · 2PVU ${f(sh.pv)} · calcolo−nativa ${sg(gap(t,sh.tr))} · calcolo−2PVU ${sg(gap(t,sh.pv))}`;
+  // salti PROPRI dei riferimenti (anche quando il calcolo non salta)
+  const dN=(sh.tr&&ps?.tr)?sh.tr.z-ps.tr.z:null, dP=(sh.pv&&ps?.pv)?sh.pv.z-ps.pv.z:null;
+  const refJ=[];
+  if(dN!=null&&Math.abs(dN)>=DEV_LOG_JUMP_M)refJ.push(`GFS-nativa ${sg(dN)}`);
+  if(dP!=null&&Math.abs(dP)>=DEV_LOG_JUMP_M)refJ.push(`2PVU ${sg(dP)}`);
+  if(refJ.length)out+=`\n    RIFERIMENTO IN SALTO rispetto all'ora precedente: ${refJ.join(' · ')} (il profilo ha più di una tropopausa plausibile)`;
   if(dz!=null&&Math.abs(dz)>=DEV_LOG_JUMP_M){
-    const ps=prev?.tropoShadow;
-    const conf=(cur,pr)=>{
-      if(cur==null||pr==null)return null;
-      const dd=cur-pr;
-      return Math.sign(dd)===Math.sign(dz)&&Math.abs(dd)>=SHADOW_CONFIRM_FRAC*Math.abs(dz);
+    const cls=(gb,ga,nome)=>{
+      if(gb==null||ga==null)return null;
+      const ab=Math.abs(gb),aa=Math.abs(ga);
+      if(ab>=SHADOW_GAP_M&&aa<=SHADOW_AGREE_M)return `si RICONGIUNGE a ${nome} (scarto ${sg(gb)} → ${sg(ga)})`;
+      if(ab<=SHADOW_AGREE_M&&aa>=SHADOW_GAP_M)return `SI ALLONTANA da ${nome} (scarto ${sg(gb)} → ${sg(ga)}): sospetto artefatto`;
+      if(ab<=SHADOW_AGREE_M&&aa<=SHADOW_AGREE_M)return `resta in accordo con ${nome} (${sg(gb)} → ${sg(ga)}): il salto è reale anche per il riferimento`;
+      if(ab>=SHADOW_GAP_M&&aa>=SHADOW_GAP_M)return `resta in disaccordo con ${nome} (${sg(gb)} → ${sg(ga)})`;
+      return `scarto da ${nome} ${sg(gb)} → ${sg(ga)} (intermedio)`;
     };
-    const cN=conf(sh.tr?.z,ps?.tr?.z),cP=conf(sh.pv?.z,ps?.pv?.z);
+    const cN=cls(gap(prev,ps?.tr),gap(t,sh.tr),'GFS-nativa');
+    const cP=cls(gap(prev,ps?.pv),gap(t,sh.pv),'2PVU');
     const verso=dz<0?'discesa':'salita';
-    let q;
-    if(cN===null&&cP===null)q='NON QUALIFICABILE (riferimenti ombra incompleti su queste due ore)';
-    else if(cN===true&&cP===true)q=`CONFERMATO da GFS-nativa e 2PVU (${verso} reale)`;
-    else if(cN===true||cP===true)q=`PARZIALMENTE confermato (solo ${cN===true?'GFS-nativa':'2PVU'}) — ${verso} possibile`;
-    else q='NON confermato dai riferimenti disponibili: artefatto di profilo probabile';
+    const parti=[cN,cP].filter(Boolean);
+    const q=parti.length?parti.join(' · '):'NON QUALIFICABILE (riferimenti ombra incompleti su queste due ore)';
     const cl=t.thresholds?.closed;
     const cands=[t.tropoZ,sh.tr?.z,sh.pv?.z].filter(x=>x!=null);
     const near=cl!=null&&cands.length&&Math.min(...cands)<cl+SHADOW_NEAR_VALVE_M;
-    out+=`\n    QUALIFICAZIONE SALTO ${dz>0?'+':''}${Math.round(dz)}m: ${q}${near?` · ⚠ ZONA VALVOLA (candidato sotto chiusa-del-mese ${Math.round(cl)}m +${SHADOW_NEAR_VALVE_M}m): nessun filtro applicato, la discesa mostra comunque il rischio`:' · fuori zona valvola: nessun effetto sul calcolo'}`;
+    out+=`\n    QUALIFICAZIONE SALTO ${dz>0?'+':''}${Math.round(dz)}m (${verso}): ${q}${near?` · ⚠ ZONA VALVOLA (candidato sotto chiusa-del-mese ${Math.round(cl)}m +${SHADOW_NEAR_VALVE_M}m): nessun filtro applicato, la discesa mostra comunque il rischio`:' · fuori zona valvola: nessun effetto sul calcolo'}`;
   }
   return out;
 }
