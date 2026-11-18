@@ -259,6 +259,86 @@ def extract_model_series(model, products, search_string, fxx_series, job_now):
     return {"runISO": cycle.replace(tzinfo=timezone.utc).isoformat(), "forecasts": forecasts}, errors
 
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MODALITÀ OMBRA (18/11/2026, operatore+assistente) — controllo incrociato della
+# tropopausa, SOLO REGISTRATO, mai usato dal calcolo del pannello.
+# Perché: la scansione sui ~49 livelli isobarici (scanLapseTropopause) può
+# "ribaltare" tra due tropopause vicine quando il profilo ha uno strato debole
+# (~2-3 K/km) tra di esse (visto il 18/11: 14.0↔16.0 km in un'ora). Servono due
+# riferimenti che NON dipendono da quella scansione:
+#   1) "tropopause" di GFS: pressione/quota/temperatura calcolate dal modello
+#      stesso sui livelli nativi (record "tropopause" in pgrb2.0p25).
+#   2) superficie a vorticità potenziale 2 PVU (tropopausa DINAMICA): definizione
+#      fisica diversa, indicatore diretto di incursioni/pieghe stratosferiche.
+# Tutto è in try/except: un errore QUI non deve mai far fallire il job né toccare
+# gfs/ecmwf. Il JSON ottiene una chiave in più, "shadow".
+# ═══════════════════════════════════════════════════════════════════════════
+def _first_scalar(point, name):
+    """Primo valore finito di una variabile (scalare o array 1-elemento) o None."""
+    try:
+        import numpy as np
+        if name not in point.data_vars:
+            return None
+        v = np.atleast_1d(point[name].values).ravel()
+        v = v[np.isfinite(v)]
+        return float(v[0]) if v.size else None
+    except Exception:
+        return None
+
+
+def _native_surface(H, search):
+    """Legge pres/gh/t di una superficie 'speciale' (tropopause o PV=2) al punto
+    CV. Ritorna dict {hPa, hgt, tmpC} oppure None; solleva solo verso il
+    chiamante, che la intercetta."""
+    ds = H.xarray(search, remove_grib=True)
+    datasets = ds if isinstance(ds, list) else [ds]
+    vals = {}
+    for d in datasets:
+        point = d.sel(latitude=CV_LAT, longitude=CV_LON, method="nearest")
+        for name in ("pres", "gh", "t"):
+            v = _first_scalar(point, name)
+            if v is not None:
+                vals[name] = v
+    if "gh" not in vals:
+        return None
+    return {
+        "hPa": round(vals["pres"] / 100.0, 1) if "pres" in vals else None,
+        "hgt": round(vals["gh"], 1),
+        "tmpC": round(vals["t"] - 273.15, 2) if "t" in vals else None,
+    }
+
+
+def build_native_shadow(gfs_data):
+    """Per ogni fxx già presente nella serie GFS ufficiale, legge dallo STESSO
+    ciclo la tropopausa nativa e la superficie 2 PVU. Ritorna dict
+    {runISO, forecasts[], errors[]}; non solleva mai."""
+    out = {"runISO": gfs_data.get("runISO"), "forecasts": [], "errors": []}
+    try:
+        cycle = datetime.fromisoformat(gfs_data["runISO"]).replace(tzinfo=None)
+        for f in gfs_data["forecasts"]:
+            fxx = f["fxx"]
+            try:
+                H = Herbie(cycle, model="gfs", product="pgrb2.0p25", fxx=fxx, **_herbie_kwargs("gfs"))
+                if not H.grib:
+                    out["errors"].append(f"fxx={fxx}: file non pubblicato")
+                    continue
+                entry = {"fxx": fxx, "validISO": f["validISO"], "tropo": None, "pv2": None}
+                for key, search in (("tropo", r":(PRES|HGT|TMP):tropopause:"),
+                                    ("pv2", r":(PRES|HGT|TMP):PV=2e-06")):
+                    try:
+                        entry[key] = _native_surface(H, search)
+                    except Exception as e:
+                        out["errors"].append(f"fxx={fxx} {key}: {type(e).__name__}: {e}")
+                if entry["tropo"] or entry["pv2"]:
+                    out["forecasts"].append(entry)
+            except Exception as e:
+                out["errors"].append(f"fxx={fxx}: {type(e).__name__}: {e}")
+    except Exception as e:
+        out["errors"].append(f"shadow: {type(e).__name__}: {e}")
+    return out
+
+
 def main():
     # naive UTC: Herbie confronta internamente datetime naive, tz-aware
     # farebbe fallire con TypeError (vedi nota in testa al file).
@@ -309,6 +389,15 @@ def main():
         all_errors.extend(f"ECMWF: {e}" for e in ecmwf_errors)
         for e in ecmwf_errors:
             print(f"  [buco ECMWF] {e}", file=sys.stderr)
+
+    # MODALITÀ OMBRA: solo registrazione, mai input del calcolo (vedi blocco sopra)
+    if gfs_data:
+        print("=== OMBRA: GFS tropopause nativa + superficie 2 PVU ===")
+        shadow = build_native_shadow(gfs_data)
+        result["shadow"] = {"gfsNative": shadow}
+        print(f"OMBRA: {len(shadow['forecasts'])}/{len(gfs_data['forecasts'])} ore, {len(shadow['errors'])} errori")
+        for e in shadow["errors"][:10]:
+            print(f"  [ombra] {e}", file=sys.stderr)
 
     if all_errors:
         result["errors"] = all_errors

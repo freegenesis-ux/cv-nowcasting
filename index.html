@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta4 round41 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9beta4 round43 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -486,7 +486,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <div id="histBox" style="font-size:12px;line-height:1.5">—</div>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta4 round41</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta4 round43</div>
 
 </div>
 <script>
@@ -591,7 +591,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9beta4 round41';
+const APP_VERSION='Belardo_v9.9beta4 round43';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -676,7 +676,8 @@ if(document.readyState!=='loading'){
   const ft=document.getElementById('footer');if(ft){ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${APP_VERSION}`;attachDevLogToggle(ft);}
 }
 const CV={lat:41.035,lon:13.942},VOLT={lat:41.1,lon:14.2};
-const TROPO={open:9000,closed:11000},SST_TH=15,T_MED=15,T_DELTA=15,MAX_RS=1.5;
+// round43: rimossa la costante TROPO={open:9000,closed:11000} (inutilizzata, quote fisse): le soglie della valvola sono SEMPRE stagionali (TROPO_SEASONAL[mese]).
+const SST_TH=15,T_MED=15,T_DELTA=15,MAX_RS=1.5;
 let STATE={},rsKm=null;
 // PATCH v9.9beta21 (round 4+5) — GEOMETRIA MULTI-SENTINELLA + GERARCHIA
 // OSSERVAZIONE>MODELLO ANCHE SULLE SENTINELLE (richiesto dall'operatore,
@@ -1679,6 +1680,36 @@ function recordDevLogLaunch(traces,lastUpdate){
 // (~500-970m, vedi validazioni P1/P2 in memoria pannello) — sopra questa
 // soglia è quasi certamente detector jitter, non fisica reale.
 const DEV_LOG_JUMP_M=1000;
+// round43 — qualificazione dei salti (SOLO LOG, modalità ombra). Soglie PROVVISORIE, da tarare con i dati raccolti.
+const SHADOW_NEAR_VALVE_M=1000;   // "zona valvola" = candidato sotto (soglia CHIUSA del mese + 1000 m); la soglia è stagionale, mai fissa
+const SHADOW_CONFIRM_FRAC=0.5;    // un riferimento "conferma" il salto se si muove nello stesso verso di almeno questa frazione
+function shadowLogLine(t,prev,dz){
+  const sh=t.tropoShadow;
+  if(!sh||(!sh.tr&&!sh.pv))return '    OMBRA (solo log, non entra nel calcolo): GFS-nativa/2PVU non disponibili per quest\'ora';
+  const f=o=>o?`${Math.round(o.z)}m${o.hPa!=null?` (${o.hPa} hPa)`:''}`:'n/d';
+  const d=(a,b)=>(a!=null&&b!=null)?`${Math.round(a-b)>=0?'+':''}${Math.round(a-b)}m`:'n/d';
+  let out=`    OMBRA (solo log, non entra nel calcolo): GFS-nativa ${f(sh.tr)} · 2PVU ${f(sh.pv)} · calcolo−nativa ${d(t.tropoZ,sh.tr?.z)} · calcolo−2PVU ${d(t.tropoZ,sh.pv?.z)}`;
+  if(dz!=null&&Math.abs(dz)>=DEV_LOG_JUMP_M){
+    const ps=prev?.tropoShadow;
+    const conf=(cur,pr)=>{
+      if(cur==null||pr==null)return null;
+      const dd=cur-pr;
+      return Math.sign(dd)===Math.sign(dz)&&Math.abs(dd)>=SHADOW_CONFIRM_FRAC*Math.abs(dz);
+    };
+    const cN=conf(sh.tr?.z,ps?.tr?.z),cP=conf(sh.pv?.z,ps?.pv?.z);
+    const verso=dz<0?'discesa':'salita';
+    let q;
+    if(cN===null&&cP===null)q='NON QUALIFICABILE (riferimenti ombra incompleti su queste due ore)';
+    else if(cN===true&&cP===true)q=`CONFERMATO da GFS-nativa e 2PVU (${verso} reale)`;
+    else if(cN===true||cP===true)q=`PARZIALMENTE confermato (solo ${cN===true?'GFS-nativa':'2PVU'}) — ${verso} possibile`;
+    else q='NON confermato dai riferimenti disponibili: artefatto di profilo probabile';
+    const cl=t.thresholds?.closed;
+    const cands=[t.tropoZ,sh.tr?.z,sh.pv?.z].filter(x=>x!=null);
+    const near=cl!=null&&cands.length&&Math.min(...cands)<cl+SHADOW_NEAR_VALVE_M;
+    out+=`\n    QUALIFICAZIONE SALTO ${dz>0?'+':''}${Math.round(dz)}m: ${q}${near?` · ⚠ ZONA VALVOLA (candidato sotto chiusa-del-mese ${Math.round(cl)}m +${SHADOW_NEAR_VALVE_M}m): nessun filtro applicato, la discesa mostra comunque il rischio`:' · fuori zona valvola: nessun effetto sul calcolo'}`;
+  }
+  return out;
+}
 function renderDevLog(){
   const el=document.getElementById('devLogText');
   if(!el)return;
@@ -1710,6 +1741,7 @@ function renderDevLog(){
       `[${i}] regime dominante=${t.branch}${branchChanged?` (era ${prev.branch})`:''}${lgFlag}`,
       `    pesi blend (round5): APERTA=${t.wOpen.toFixed(2)} INTERMEDIA=${t.wInterm.toFixed(2)} CHIUSA=${t.wClosed.toFixed(2)}`,
       `    tropoZ=${t.tropoZ??'N/D'}m fonte=${t.tropoSource??'N/D'}${t.anchorAgeH!=null?` (ancora ${t.anchorAgeH}h fa, scade a 13h)`:''} hPa=${t.tropoHPa??'N/D'} Δz_vs_ora_prec=${dz!=null?dz+'m':'N/D'}${dzFlag}${(t.tropoP1Raw!=null||t.tropoP2Raw!=null)?` [round66: P1(radiosonda)=${t.tropoP1Raw??'n/d'}m P2(${t.tropoZ2Source??'n/d'})=${t.tropoP2Raw??'n/d'}m${t.tropoP1Raw!=null&&t.tropoP2Raw!=null?` Δ=${Math.abs(t.tropoP1Raw-t.tropoP2Raw)}m`:''} pesoSonda=${t.tropoSoundWeight??'n/d'}]`:''}${t.tropoAnchorRawExists?` [DIAG ancoraGrezza: etàSalvataggio=${t.tropoAnchorRawAgeH}h etàSondaggioReale=${t.tropoAnchorRealAgeH}h hPa=${t.tropoAnchorRawHPa} origin=${t.tropoAnchorRawOrigin} zModelloTrovato=${t.tropoZModelloOraFound}]`:' [DIAG nessuna ancora salvata]'}`,
+      shadowLogLine(t,prev,dz),
       `    soglie mese: open=${Math.round(t.thresholds.open)} intermLo=${Math.round(t.thresholds.intermLo)} closed=${Math.round(t.thresholds.closed)}`,
       `    cape(best_match)=${t.cape} li=${t.li} cin=${t.cin} vil=${t.vil} ws250=${t.ws250} wd250=${t.wd250}`,
       `    → USATO (round4, media pesata quorum): cape=${t.capeEff} li=${t.liEff} cin=${t.cinEff} — ${t.nModelsUsed} fonti${t.quorumUsed?'':' ⚠ quorum non disponibile, fallback su best_match grezzo'}`,
@@ -2528,6 +2560,14 @@ function tropoQuorumEstimate(i){
   };
 }
 
+// round42 (18/11/2026): quota mista sonda/GRIB con pressione coerente. Prima, con peso sonda >=0.5, si mostrava la pressione
+// della sola sonda accanto a una quota già spostata verso il GRIB (es. "13.30 km (200 hPa)" quando 200 hPa è a ~12.1 km).
+// La quota geopotenziale è ~lineare in ln(p): interpolo ln(p) con gli stessi pesi usati per la quota.
+function tropoHpaBlend(w,hPaSonda,hPaGrib){
+  if(hPaSonda==null)return hPaGrib??null;
+  if(hPaGrib==null)return w>=0.5?hPaSonda:null;
+  return Math.round(Math.exp(w*Math.log(hPaSonda)+(1-w)*Math.log(hPaGrib)));
+}
 function calcTropo(i,h){
   const month=new Date().getMonth();
   const seasonalMean=TROPO_SEASONAL[month];
@@ -2727,7 +2767,7 @@ function calcTropo(i,h){
         tropoZ=Math.round(soundWeight*zCandidato+(1-soundWeight)*riferimentoP2);
         // round39: con la sonda sotto il 50% il valore è dominato dal GRIB: la pressione mostrata (prima quella della sonda, es. 300 hPa
         // accanto a 12.2 km) deve essere coerente con la quota, quindi quella del GRIB (o n/d).
-        tropohPa=(riferimentoP2!==seasonalMean&&soundWeight<0.5)?tropohPa2:anchor.hPa; source=isTrapaniOrigin?'radiosonda-trapani-p2su2atropo':'radiosonda-p2su2atropo';
+        tropohPa=tropoHpaBlend(soundWeight,anchor.hPa,(riferimentoP2!==seasonalMean)?tropohPa2:null); source=isTrapaniOrigin?'radiosonda-trapani-p2su2atropo':'radiosonda-p2su2atropo';
       } else {
         // FIX (28/08/2026, operatore+assistente) — BUG TROVATO: questo
         // ramo si limitava a ETICHETTARE la sorgente come incoerente
@@ -2742,7 +2782,7 @@ function calcTropo(i,h){
         // se P2 non esistesse. tropohPa resta quello della sonda (l'unico
         // percorso realmente usato qui).
         tropoZ=Math.round(soundWeight*zCandidato+(1-soundWeight)*riferimentoP2); // round38: GRIB se disponibile, altrimenti climatologia
-        tropohPa=(riferimentoP2!==seasonalMean&&soundWeight<0.5)?tropohPa2:anchor.hPa; // round39: vedi sopra
+        tropohPa=tropoHpaBlend(soundWeight,anchor.hPa,(riferimentoP2!==seasonalMean)?tropohPa2:null); // round42: pressione coerente con la quota mista
         source=isTrapaniOrigin?'radiosonda-trapani-p2incoerente':'radiosonda-p2incoerente';
       }
     }
@@ -2855,7 +2895,7 @@ function calcTropo(i,h){
   // eventuali tropopause aggiuntive (2ª, 3ª, 4ª...) osservate nello stesso
   // sondaggio Wyoming.
   const tropos=(doppiaTropo&&Array.isArray(anchor.tropos)&&anchor.tropos.length>=2)?anchor.tropos:(tropo2?[{hPa:tropohPa,z:tropoZ},tropo2]:null);
-  return{hPa:tropohPa,z:tropoZ,valve:isStratIntrusion?'INTRUSIONE':valve,color:isStratIntrusion?'#9333ea':baseColor,convFactor,isStratIntrusion,stratNote,deviation:Math.round(deviation),seasonalMean,vertGrad,source,isRadiosonda,lowConfidence,anchorAgeH:isRadiosonda?Math.round(anchorAgeH*10)/10:null,ls,doppiaTropo,tropo2,tropos,p1Raw:isRadiosonda?p1Raw:null,p2Raw:tropoZ2,soundWeight:isRadiosonda?Math.round(soundWeight*100)/100:0,tropoZ2Source,
+  return{hPa:tropohPa,z:tropoZ,valve:isStratIntrusion?'INTRUSIONE':valve,color:isStratIntrusion?'#9333ea':baseColor,convFactor,isStratIntrusion,stratNote,deviation:Math.round(deviation),seasonalMean,vertGrad,source,isRadiosonda,lowConfidence,anchorAgeH:isRadiosonda?Math.round(anchorAgeH*10)/10:null,ls,doppiaTropo,tropo2,tropos,p1Raw:isRadiosonda?p1Raw:null,p2Raw:tropoZ2,soundWeight:isRadiosonda?Math.round(soundWeight*100)/100:0,tropoZ2Source,shadow:gribShadowAt(new Date(h.time[i]).getTime()),
     // DIAGNOSTICA (23/08/2026, operatore; causa trovata 25/08, round71) —
     // non gated da isRadiosonda apposta: mostra lo stato grezzo
     // dell'ancora anche quando il ramo sonda non si attiva. Era stata
@@ -4041,6 +4081,12 @@ const TROPO_GRIB_MIN_HPA=500;
 // pubblica una SERIE (GFS orario fxx 0-12, ECMWF trioraria fxx 0,3,6,9,12
 // — il massimo che ECMWF offre in questa finestra, verificato dal vivo).
 const TROPO_GRIB_MAX_RUN_AGE_DIFF_H=1;
+// round43 — MODALITÀ OMBRA: tropopausa GFS nativa e superficie 2 PVU dalla pipeline GRIB. SOLO LOG, non entra mai nel calcolo (vedi shadowLogLine).
+let LAST_GRIB_SHADOW=[]; // [{validMs,tr:{z,hPa}|null,pv:{z,hPa}|null}]
+function gribShadowAt(targetMs){
+  const f=(LAST_GRIB_SHADOW||[]).find(x=>x.validMs===targetMs);
+  return f||null;
+}
 let LAST_GRIB_HOURLY=null; // {gfs:[{fxx,validISO,validMs,z,hPa,nLevels}...], ecmwf:[...], ageH} popolato da refreshTropoGribQuorum() ad ogni lancio, letto sincrono da gribTropoAt()
 
 // FIX round77 — lookup per una specifica ora (targetMs = timestamp
@@ -4138,6 +4184,14 @@ async function refreshTropoGribQuorum(setSrc){
       return;
     }
     LAST_GRIB_HOURLY={gfs:gfsSeries,ecmwf:ecmwfSeries,ageH:Math.round(ageH*10)/10};
+    try{ // round43: ombra, mai bloccante
+      LAST_GRIB_SHADOW=(data.shadow?.gfsNative?.forecasts||[]).map(f=>{
+        const validMs=new Date(f.validISO).getTime();
+        if(Number.isNaN(validMs))return null;
+        const m=o=>(o&&o.hgt!=null)?{z:o.hgt,hPa:o.hPa??null}:null;
+        return{validMs,tr:m(f.tropo),pv:m(f.pv2)};
+      }).filter(Boolean);
+    }catch(_){LAST_GRIB_SHADOW=[];}
     const gfsTot=data.gfs?.forecasts?.length??0, ecmwfTot=data.ecmwf?.forecasts?.length??0;
     setSrc('grib',true,`GRIB tropopausa: ✓ gfs ${gfsSeries.length}/${gfsTot} ore, ecmwf ${ecmwfSeries.length}/${ecmwfTot} ore (dato ${ageH.toFixed(1)}h fa)`);
   }catch(e){
@@ -6553,7 +6607,7 @@ function calcHourlyRisk(h,idx,pd){
   // triggerStrength) al posto dei soli booleani, per poter sempre vedere
   // QUANTO ciascun regime ha contribuito, non solo quale fosse "attivo".
   const trace={idx,tropoZ:h.tropo?.z??null,tropoSource:h.tropo?.source??null,tropoHPa:h.tropo?.hPa??null,anchorAgeH:h.tropo?.anchorAgeH??null,
-    tropoP1Raw:h.tropo?.p1Raw??null,tropoP2Raw:h.tropo?.p2Raw??null,tropoSoundWeight:h.tropo?.soundWeight??null,tropoZ2Source:h.tropo?.tropoZ2Source??null,
+    tropoP1Raw:h.tropo?.p1Raw??null,tropoP2Raw:h.tropo?.p2Raw??null,tropoSoundWeight:h.tropo?.soundWeight??null,tropoZ2Source:h.tropo?.tropoZ2Source??null,tropoShadow:h.tropo?.shadow??null,
     tropoAnchorRawExists:h.tropo?.anchorRawExists??null,tropoAnchorRawAgeH:h.tropo?.anchorRawAgeH??null,tropoAnchorRealAgeH:h.tropo?.anchorRealAgeH??null,tropoAnchorRawHPa:h.tropo?.anchorRawHPa??null,tropoAnchorRawOrigin:h.tropo?.anchorRawOrigin??null,tropoZModelloOraFound:h.tropo?.zModelloOraFound??null,
     cape:h.cape??null,li:h.li??null,cin:h.cin??null,vil:vilH,ws250:h.ws250??null,wd250:h.wd250??null,
     capeEff,liEff,cinEff,nModelsUsed:qc.nModels,quorumUsed:qc.quorumUsed,perModel:qc.perModel,
@@ -8218,6 +8272,8 @@ async function loadAll(){
       // round41: stazioni regionali (interne, non mostrate) + riserva LIRN se LIRM manca o è oltre soglia
       metarData.regional={};
       for(const r of METAR_REGIONAL)metarData.regional[r.id]=metMap[r.id]??null;
+      {const nR=METAR_REGIONAL.filter(r=>metarData.regional[r.id]&&metarData.regional[r.id].ageMin!=null&&metarData.regional[r.id].ageMin<=CLOUD_OBS_STALE_MIN);
+       setSrc('metarreg',nR.length>0,`METAR regionali: ${nR.length}/${METAR_REGIONAL.length} freschi (${METAR_REGIONAL.map(r=>r.id+(nR.includes(r)?'✓':'✗')).join(' ')})`);}
       metarData.backup=null;
       {const lirmOk=!!p&&p.ageMin!=null&&p.ageMin<=CLOUD_OBS_STALE_MIN;
        const bk=metMap[METAR_BACKUP_ID];
@@ -8353,7 +8409,7 @@ async function loadAll(){
             raw:`[OM-current] T${c.temperature_2m?.toFixed(1)}°C P${c.precipitation?.toFixed(1)}mm (cloud: n/d, fallback non usa modello per nuvolosità)`,
             station:'OM-CV',_isFallback:true
           };
-          setSrc('metar',true,'METAR: OM▸');
+          setSrc('metar',!!metarData.backup,metarData.backup?`METAR: LIRM ✗ · riserva LIRN ${metarData.backup.ageMin}min (T/Dp/RH)`:'METAR: OM▸');
         }else{setSrc('metar',false,'METAR: N/D');}
       }catch(_){setSrc('metar',false,'METAR: N/D');}
     }
