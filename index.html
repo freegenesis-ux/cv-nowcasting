@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9beta4 round44 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9 stable round1 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -486,7 +486,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <div id="histBox" style="font-size:12px;line-height:1.5">—</div>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · Belardo_v9.9beta4 round44</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · BTW BeTrueWeather Castel Volturno · Belardo_v9.9 stable round1</div>
 
 </div>
 <script>
@@ -591,7 +591,10 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9beta4 round45';
+const APP_VERSION='Belardo_v9.9 stable round1';
+// 20/11/2026 (operatore): promossa la 9.9 a STABLE (la numerazione dei round riparte da 1, come alla promozione a beta4).
+// Nome del motore (algoritmo + orologi Worker/pipeline): BTW — BeTrueWeather Castel Volturno. Belardo resta il pannello.
+const MACHINE_NAME='BTW BeTrueWeather Castel Volturno';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -668,12 +671,12 @@ function attachDevLogToggle(ft){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   const vb=document.getElementById('verBadge');if(vb)vb.textContent=APP_VERSION;
-  const ft=document.getElementById('footer');if(ft){ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${APP_VERSION}`;attachDevLogToggle(ft);}
+  const ft=document.getElementById('footer');if(ft){ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${MACHINE_NAME} · ${APP_VERSION}`;attachDevLogToggle(ft);}
 });
 // Fallback se DOMContentLoaded è già passato (script in fondo al body)
 if(document.readyState!=='loading'){
   const vb=document.getElementById('verBadge');if(vb)vb.textContent=APP_VERSION;
-  const ft=document.getElementById('footer');if(ft){ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${APP_VERSION}`;attachDevLogToggle(ft);}
+  const ft=document.getElementById('footer');if(ft){ft.innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · ${MACHINE_NAME} · ${APP_VERSION}`;attachDevLogToggle(ft);}
 }
 const CV={lat:41.035,lon:13.942},VOLT={lat:41.1,lon:14.2};
 // round43: rimossa la costante TROPO={open:9000,closed:11000} (inutilizzata, quote fisse): le soglie della valvola sono SEMPRE stagionali (TROPO_SEASONAL[mese]).
@@ -1807,7 +1810,7 @@ function renderDevLog(){
     ?`\n\n${'─'.repeat(44)}\nOSSERVAZIONE — RADIOSONDA WYOMING (misura reale, Pratica di Mare, ~85km da CV)\n`+
       `cape${wy.kind==='MU'?'(MU, parcella più instabile)':''}=${wy.cape??'n/d'} li=${wy.li??'n/d'} cin${wy.kind==='MU'?'(MU)':''}=${wy.cin??'n/d'} showalter=${wy.show??'n/d'} — lancio ${wy.whenISO} (${((Date.now()-Date.parse(wy.whenISO))/3600000).toFixed(1)}h fa)`
     :`\n\n${'─'.repeat(44)}\nOSSERVAZIONE — RADIOSONDA WYOMING: ${WY_SOUNDING_SEEN?'sondaggio presente ma senza indici CAPE/LI/CIN riconoscibili (Wyoming non li ha pubblicati per questo lancio).':'sondaggio non disponibile dall\'archivio in rete in questo lancio.'}`;
-  el.textContent=srcSummary+`DEV LOG — ultimo lancio (${traces.length} ore)\n${'─'.repeat(44)}\n`+
+  el.textContent=srcSummary+`DEV LOG — ${MACHINE_NAME} — ultimo lancio (${traces.length} ore)\n${'─'.repeat(44)}\n`+
     lines.join('\n\n')+
     `\n\n${'─'.repeat(44)}\nSTORICO SALTI TROPOPAUSA ≥${DEV_LOG_JUMP_M}m (retention ${DEV_LOG_RETAIN_H}h, ${hist.length} lanci salvati)\n`+
     (jumpsHist.length?jumpsHist.join('\n'):'Nessun salto registrato nello storico.')+
@@ -6515,18 +6518,17 @@ function makeBf(hrs,sst,marHrs,risk,lastUpdate,flood,nearSents,pd){
   // solo dalle fonti realmente disponibili in questo run — ora che il corpo
   // sotto contiene davvero le sezioni Aria/Sole/Sentinelle lontane/METAR,
   // questa riga e il contenuto sono finalmente allineati.
-  const srcParts=['Open-Meteo best_match','SST Marine API','GloFAS Flood API'];
+  // round46 (20/11/2026, operatore): ordine per uso, senza etichette — osservazione → previsione → eventi estremi → enti.
+  const srcParts=[];
   if(STATE.metarData?.primary)srcParts.push(STATE.metarData.primary._isFallback?(STATE.metarData.backup?`METAR LIRM NON disponibile (T/Dp/RH di superficie da LIRN Napoli ~${METAR_BACKUP_KM} km, osservazione di riserva; pioggia e nubi non da LIRN)`:'METAR LIRM NON disponibile (superficie da modello Open-Meteo, non osservazione)'):`METAR ${STATE.metarData.primary.station??'LIRM'} (osservazione)`);
   if(STATE.radarStatus)srcParts.push(`Radar ${STATE.radarStatus.source} (osservazione)`);
-  // FIX round3 (04/08/2026) — l'etichetta diceva "EUMETSAT MTG" per un
-  // conteggio che in realtà somma 2 fetch MSG (rgb_convection,
-  // rgb_airmass) + 1 fetch MTG (li_afa, fulminazioni) sotto un unico "3/3"
-  // — non solo imprecisa, una fusione di due fonti diverse dichiarata
-  // come una sola. Corretto a "MSG+MTG" per onestà, invariato il resto.
-  if(STATE.eumetsat?.ok>0)srcParts.push(`EUMETSAT MSG+MTG (satellite, ${STATE.eumetsat.ok}/3)`);
-  if(STATE.aq)srcParts.push('CAMS Aria');
+  if(STATE.eumetsat?.ok>0)srcParts.push(`EUMETSAT MSG+MTG (satellite, ${STATE.eumetsat.ok}/3)`); // 2 fetch MSG + 1 MTG (round3 04/08/2026)
+  srcParts.push('Open-Meteo best_match');
   if((nearSents?.length??0)>0||(STATE.farSents?.length??0)>0)srcParts.push('Rete sentinelle GFS/ICON');
+  srcParts.push('SST Marine API');
+  if(STATE.aq)srcParts.push('CAMS Aria');
   if(STATE.quorum48h?.ok)srcParts.push(`Quorum ${QMODELS.length} modelli NWP (${QMODELS.length} centri indipendenti)`);
+  srcParts.push('GloFAS Flood API');
   if(STATE.quorum48h?.dpcPath)srcParts.push('DPC Bollettino Criticità (dati.protezionecivile.gov.it)');
   if(STATE.quorum48h?.maOk)srcParts.push('MeteoAlarm EU');
 
@@ -7661,7 +7663,7 @@ document.getElementById('hoursRows').innerHTML=hrs.slice(0,13).map((h,idx)=>{
   if(STATE.quorum48h?.ok)footerExtra.push(`Quorum ${QMODELS.length} modelli`);
   if(STATE.quorum48h?.dpcPath)footerExtra.push('DPC');
   if(STATE.quorum48h?.maOk)footerExtra.push('MeteoAlarm');
-  document.getElementById('footer').innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS Air Quality${footerExtra.length?' · '+footerExtra.join(' · '):''}<br>Sentinelle prossime: Grazzanise · Napoli Cdch. · Ponza · C.Miseno · Fiumicino<br>Sentinelle lontane: Gibilterra · Baleari · Barcellona · Algeri · Belgrado<br>Aggiornato: ${lastUpdate.toLocaleString('it-IT')} · ${APP_VERSION}`;
+  document.getElementById('footer').innerHTML=`OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS Air Quality${footerExtra.length?' · '+footerExtra.join(' · '):''}<br>Sentinelle prossime: Grazzanise · Napoli Cdch. · Ponza · C.Miseno · Fiumicino<br>Sentinelle lontane: Gibilterra · Baleari · Barcellona · Algeri · Belgrado<br>Aggiornato: ${lastUpdate.toLocaleString('it-IT')} · ${MACHINE_NAME} · ${APP_VERSION}`;
   document.title=`Nowcasting CV ${APP_VERSION} — Castel Volturno`;
 
   // v9.9beta: card RADAR REALE — stesso pattern della card METAR sopra.
