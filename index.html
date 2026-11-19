@@ -591,7 +591,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9beta4 round44';
+const APP_VERSION='Belardo_v9.9beta4 round45';
 // NOTA v9.9beta3 round2 (27/07/2026): il <title> statico (riga ~6) e il
 // footer statico (riga ~459) sono stringhe scritte a mano, non derivate da
 // APP_VERSION — un file HTML puro non può referenziare una costante JS nel
@@ -6001,7 +6001,7 @@ function bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd){
 
 '',
 `[${now.backupObs?`OSSERVATO · LIRN Napoli ~${METAR_BACKUP_KM} km, riserva (LIRM non disponibile; non è Grazzanise) ${now.backupAge}min fa`:now.metarT!=null?'OSSERVATO · METAR LIRM'+(STATE.metarData?.primary?.ageMin!=null?` ${STATE.metarData.primary.ageMin}min fa`:''):'ANALISI MODELLO'}] SUPERFICIE: T ${now.t2m.toFixed(1)}°C${now.t2m>T_MED+T_DELTA?' ⚠ CALDO ESTREMO':now.t2m<T_MED-T_DELTA?' ⚠ FREDDO ESTREMO':''} | Dp ${now.dp.toFixed(1)}°C | RH ${now.rh}%`,
-`[ANALISI MODELLO] VENTO: ${Math.round(now.ws)} km/h da ${Math.round(now.wd)}° (raffiche ${Math.round(now.gusts)} km/h) | Nubi: ${(()=>{const u=STATE.cloudResolution?.value,raw=now.cloud,hasM=now.metarT!=null||now._age!=null;if(u==null||Math.round(u)===Math.round(raw))return `${raw}% [${hasM?'OSSERVATO · METAR':'ANALISI MODELLO'}]`;return `${Math.round(u)}% [OSSERVATO+SATELLITE, valore usato] (grezzo ${hasM?'METAR':'modello'} ${raw}%)`;})()}${STATE.cloudResolution?.note&&/DISCORDANZA|Fronte inequivocabile/.test(STATE.cloudResolution.note)?`\n  NUBI (arbitraggio osservazione/satellite, valore usato ${STATE.cloudResolution.value}%): ${STATE.cloudResolution.note.replace(/^[\s·]+/,'')}`:''}`,
+`[ANALISI MODELLO] VENTO: ${Math.round(now.ws)} km/h da ${Math.round(now.wd)}° (raffiche ${Math.round(now.gusts)} km/h) | Nubi: ${(()=>{const u=STATE.cloudResolution?.value,raw=now.cloud,hasM=now.metarT!=null||now._age!=null;if(u==null||Math.round(u)===Math.round(raw))return `${raw}% [${hasM?'OSSERVATO · METAR':'ANALISI MODELLO'}]`;return `${Math.round(u)}% [${/LIRN Napoli/.test(STATE.cloudResolution?.note||'')?'OSSERVATO · METAR LIRM+LIRN':'OSSERVATO+SATELLITE'}, valore usato] (grezzo ${hasM?'METAR':'modello'} ${raw}%)`;})()}${STATE.cloudResolution?.note&&/DISCORDANZA|Fronte inequivocabile|LIRN Napoli/.test(STATE.cloudResolution.note)?`\n  NUBI (arbitraggio osservazione/satellite, valore usato ${STATE.cloudResolution.value}%): ${STATE.cloudResolution.note.replace(/^[\s·]+/,'')}`:''}`,
 threshLine,cLine,fLine,
 bfLineNebbia(),
 '',
@@ -7122,6 +7122,29 @@ function renderAll(){
     }
     if(_rainObs&&cloudResolution&&cloudResolution.value!=null&&cloudResolution.value<90){
       cloudResolution={...cloudResolution,value:90,note:(cloudResolution.note||'')+` · pioggia osservata in atto (${_rsC?.hasEcho===true?'radar':'METAR'}) ⇒ cielo coperto (valore precedente ${Math.round(cloudResolution.value)}%)`};
+    }
+  }catch(_){}
+  // round45 (19/11/2026, operatore: «stamane alle dieci sembrava sera inoltrata», pannello 50%): secondo testimone per la nuvolosità.
+  // LIRN (Napoli, ~34 km) ha riportato SCT015+BKN040 (100%) per ore, LIRM FEW015+SCT040 (50%) e poi SCT010+SCT020 (75%): il METAR conta
+  // gli strati, non lo spessore, e un solo osservatorio può mancare lo strato rotto. Regola (solo di giorno; di notte lavorano già le sentinelle):
+  // se LIRN fresco è ≥20 punti sopra il valore usato E c'è un secondo indizio (scarto T–Dp di LIRM ≤1,5 °C, pioggia nel METAR di LIRM/LIRN,
+  // oppure media sentinelle di modello ≥85%), la nuvolosità usata è la media di LIRM e LIRN. Solo verso l'alto e solo su nubi/irraggiamento:
+  // mai sulle allerte (il fronte richiede comunque VIL, H₂O e pioggia). Falso positivo costoso → qui l'errore peggiore è un cielo "più chiuso" del vero.
+  try{
+    const _p5=STATE?.metarData?.primary,_n5=STATE?.metarData?.sents?.[METAR_BACKUP_ID];
+    const _ok5=o=>o&&(o.ageMin==null||o.ageMin<=CLOUD_OBS_STALE_MIN);
+    if(!isNightObs_r2&&cloudResolution&&cloudResolution.value!=null&&_p5&&!_p5._isFallback&&_ok5(_p5)&&_n5&&!_n5.cavok&&_n5.cloudPct!=null&&_ok5(_n5)&&_n5.cloudPct>=cloudResolution.value+20){
+      const _sp5=(_p5.temp!=null&&_p5.dp!=null)?_p5.temp-_p5.dp:null;
+      const _ns5=(STATE.nearSents||[]).map(s=>s.cloud).filter(v=>v!=null);
+      const _nm5=_ns5.length?_ns5.reduce((a,b)=>a+b,0)/_ns5.length:null;
+      const _ind5=[];
+      if(_sp5!=null&&_sp5<=1.5)_ind5.push(`scarto T–Dp ${_sp5.toFixed(1)}°C`);
+      if(_p5.rainNow===true||_n5.rainNow===true)_ind5.push('pioggia nel METAR');
+      if(_nm5!=null&&_nm5>=85)_ind5.push(`sentinelle di modello ${Math.round(_nm5)}%`);
+      if(_ind5.length){
+        const _v05=cloudResolution.value,_v5=Math.round((_v05+_n5.cloudPct)/2);
+        cloudResolution={...cloudResolution,value:_v5,note:(cloudResolution.note||'')+` · LIRN Napoli ${_n5.cloudPct}% (${_n5.ageMin??'?'} min fa) più coperto di LIRM: media dei due ⇒ ${_v5}% (valore precedente ${Math.round(_v05)}%; indizi: ${_ind5.join(', ')})`};
+      }
     }
   }catch(_){}
 
