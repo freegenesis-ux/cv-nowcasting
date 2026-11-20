@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nowcasting CV Belardo_v9.9 stable round1 — Castel Volturno</title>
+<title>Nowcasting CV Belardo_v9.9 stable round2 — Castel Volturno</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',monospace;padding:14px 12px;min-height:100vh;}
@@ -486,7 +486,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
   <div id="histBox" style="font-size:12px;line-height:1.5">—</div>
 </div>
 
-<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · BTW BeTrueWeather Castel Volturno · Belardo_v9.9 stable round1</div>
+<div class="footer" id="footer">OPEN-METEO best_match · SST Marine API · GloFAS Flood API · CAMS · BTW BeTrueWeather Castel Volturno · Belardo_v9.9 stable round2</div>
 
 </div>
 <script>
@@ -591,7 +591,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9 stable round1';
+const APP_VERSION='Belardo_v9.9 stable round2';
 // 20/11/2026 (operatore): promossa la 9.9 a STABLE (la numerazione dei round riparte da 1, come alla promozione a beta4).
 // Nome del motore (algoritmo + orologi Worker/pipeline): BTW — BeTrueWeather Castel Volturno. Belardo resta il pannello.
 const MACHINE_NAME='BTW BeTrueWeather Castel Volturno';
@@ -5993,7 +5993,7 @@ function bfSectMeteo(hrs,sst,marHrs,flood,nearSents,pd){
     if(parts.length)metarSentLine=`[OSSERVATO] METAR SENTINELLE (cross-check): ${parts.join(' · ')}`;
   }
   return[
-`[${now.tropo?.isRadiosonda?'MISTO sonda+GRIB':'ANALISI MODELLO'}] TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${/p2incoerente$/.test(now.tropo.source??'')?' (GRIB/quorum scartato: disaccordo >1.8 km dalla sonda)':''}${now.tropo.doppiaTropo?(()=>{const ex=fmtTropoExtra(now.tropo.tropos);return` — MULTIPLA${ex?` (${ex})`:''}`;})():''}`:'N/D'}`,
+`[${now.tropo?.isRadiosonda?'MISTO sonda+GRIB':'ANALISI MODELLO'}] TROPOPAUSA: ${now.tropo?`${(now.tropo.z/1000).toFixed(2)} km (${now.tropo.hPa!=null?now.tropo.hPa+' hPa':'liv. n/d'}) — valvola ${now.tropo.valve} — ${now.tropo.isRadiosonda?'recuperata':'stimata'}${now.tropo.lowConfidence?' (paracadute Trapani, bassa affidabilità)':''}${/p2incoerente$/.test(now.tropo.source??'')?' (sonda e GRIB in disaccordo di oltre 1.8 km: valore pesato, la sonda cede gradualmente il passo al GRIB)':''}${now.tropo.doppiaTropo?(()=>{const ex=fmtTropoExtra(now.tropo.tropos);return` — MULTIPLA${ex?` (${ex})`:''}`;})():''}`:'N/D'}`,
 `[ANALISI MODELLO · quorum] CAPE: ${qcNow.cape} J/kg | LI: ${qcNow.li.toFixed(1)} K | CIN: ${ci} J/kg${cr&&ci<50?' ⚠ FRAGILE':''} | VIL: ${now.vil} kg/m²`,
 (()=>{const wy=loadWyomingIndices();if(!wy)return null;const li=wy.launchISO??wy.whenISO;const lt=li?new Date(li).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'?';const ag=li?((Date.now()-Date.parse(li))/3600000).toFixed(1):'?';return `[OSSERVATO · DATO DI RIFERIMENTO] SONDA Pratica di Mare, lancio ${lt} (acquisita già ~3h vecchia; ora ${ag}h): CAPE${wy.kind==='MU'?'(MU)':''} ${wy.cape??'n/d'} | LI ${wy.li??'n/d'} | CIN ${wy.cin??'n/d'} | SHOW ${wy.show??'n/d'}`;})(),
 `[ANALISI MODELLO] JET 250hPa: ${Math.round(now.ws250)} km/h da ${Math.round(now.wd250)}°`,
@@ -7563,7 +7563,7 @@ document.getElementById('hoursRows').innerHTML=hrs.slice(0,13).map((h,idx)=>{
       'radiosonda-trapani':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (Roma 16245 non disponibile, ${t.anchorRealAgeH}h fa) — bassa affidabilità`,c:'#eab308'},
       'radiosonda-trapani-p2su2atropo':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (${t.anchorRealAgeH}h fa) — bassa affidabilità, P2 scartato: tropopausa nota diversa dalla primaria`,c:'#eab308'},
       'radiosonda-p2incoerente':{lbl:`🎈 RECUPERATA · radiosonda RS 16245 (${t.anchorRealAgeH}h fa) — disaccordo >1.8 km dal modello: la sonda decade gradualmente verso il GRIB (se disponibile, altrimenti climatologia)`,c:'#22c55e'},
-      'radiosonda-trapani-p2incoerente':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (${t.anchorRealAgeH}h fa) — bassa affidabilità, GRIB/quorum scartato: disaccordo >1.8 km dalla sonda`,c:'#eab308'},
+      'radiosonda-trapani-p2incoerente':{lbl:`🎈🪂 RECUPERATA · radiosonda RS 16429 Trapani, PARACADUTE (${t.anchorRealAgeH}h fa) — bassa affidabilità, sonda e GRIB in disaccordo >1.8 km: la sonda cede gradualmente il passo al GRIB`,c:'#eab308'},
       'stima-grib':{lbl:'📊 STIMATA · modello GRIB (GFS/ECMWF, profilo completo)',c:'#eab308'},
       'stima-6liv':{lbl:'📊 STIMATA · profilo NWP 6 livelli',c:'#eab308'},
       'stima-6liv-incoerente':{lbl:'📊 STIMATA · profilo NWP 6 livelli (radiosonda scartata: incoerente >1800m)',c:'#eab308'},
