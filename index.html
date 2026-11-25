@@ -598,7 +598,7 @@ body{background:#060d18;color:#b8cfe0;font-family:'IBM Plex Mono','Courier New',
 // ripartono dopo la promozione; da r50 (12/08) a r80 (12/09/2026) i round sono
 // di nuovo globali e progressivi. L'etichetta corrente segue l'ultimo round
 // globale applicato (r81 = caricamento fonti in parallelo). Aggiornare QUI, nel <title> statico e nel footer.
-const APP_VERSION='Belardo_v9.9 stable round30';
+const APP_VERSION='Belardo_v9.9 stable round35';
 // 20/11/2026 (operatore): promossa la 9.9 a STABLE (la numerazione dei round riparte da 1, come alla promozione a beta4).
 // Nome del motore (algoritmo + orologi Worker/pipeline): BTW — BeTrueWeather Castel Volturno. Belardo resta il pannello.
 const MACHINE_NAME='BTW BeTrueWeather Castel Volturno';
@@ -652,7 +652,7 @@ async function loadHistory(){
     // 4) diagramma di affidabilità
     const rel=j.reliability||{}, keys=Object.keys(rel);
     const nTot=keys.reduce((n,k)=>n+rel[k].reduce((m,b)=>m+b.n,0),0);
-    h+=`<br><b>Affidabilità del calcolo</b> — probabilità registrata (a sinistra) contro frequenza con cui l'evento si è poi osservato entro 72 h. Voci del diario: ${j.diaryEntries}, valutabili (≥72 h): ${j.diaryEvaluated}.<br>`;
+    h+=`<br><b>Affidabilità di BTW</b> — probabilità registrata (a sinistra) contro frequenza con cui l'evento si è poi osservato entro 72 h. Voci del diario: ${j.diaryEntries}, valutabili (≥72 h): ${j.diaryEvaluated}.<br>`;
     if(nTot<30)h+=`<span style="color:#f97316"><b>⚠ Campione ancora molto piccolo (n=${nTot}): i grafici NON sono significativi; si riempiranno con le settimane.</b></span><br>`;
     const bar=(b,mid)=>{const f=b.n?b.hits/b.n:null,W=150;return `<div style="display:flex;align-items:center;gap:6px"><span style="width:62px">${b.range}</span><svg width="${W}" height="12"><rect width="${W}" height="12" fill="#8883"/>${f!=null?`<rect width="${Math.round(W*f)}" height="12" fill="#38bdf8"/>`:''}<line x1="${Math.round(W*mid)}" x2="${Math.round(W*mid)}" y1="0" y2="12" stroke="#ef4444" stroke-width="2"/></svg><span>${b.n?`${Math.round(f*100)}% (${b.hits}/${b.n})`:'n=0'}</span></div>`;};
     const mids=[0.05,0.22,0.47,0.8];
@@ -1807,6 +1807,7 @@ function renderDevLog(){
       `  calcolo: ${ap.calcHazard?`hazard=${ap.calcHazard} severità=${ap.calcSeverity} (${ap.calcLabel})`:'nessun evento ≥35%'} — tutti gli eventi ≥35%: ${ap.allCalcActive||'—'}\n`+
       `  istituzionale: ${ap.instHazard?`hazard=${ap.instHazard} severità=${ap.instSeverity}`:'nessuna allerta attiva'} — voci: ${ap.instItemsTxt||'—'}\n`+
       `  REGISTRO IN RETE (Worker, per verifica realizzata/non realizzata): ${STATE.devLogAlertArchive||'invio in corso'}\n`+
+      `  PIENA — seconda conferma per finestra: ${(STATE.devFlood||[]).join(' | ')||'nessuna finestra con portata sopra soglia'}\n`+
       `  stesso hazard (calc vs istituzionale): ${ap.sameHazard?(ap.mode==='convergenza'?'SÌ → convergenza':'SÌ, ma NON convergenti ('+(ap.mode==='stesso-fenomeno'?'livello o orari diversi':ap.mode)+')'):'NO → '+(ap.calcHazard&&ap.instHazard?'divergenza':'nessun confronto possibile (una delle due fonti inattiva)')}`
     :'';
   // ROUND 8 (07/08/2026) — decimo voto: misura reale (non modello) da
@@ -1821,7 +1822,7 @@ function renderDevLog(){
     lines.join('\n\n')+
     `\n\n${'─'.repeat(44)}\nSTORICO SALTI TROPOPAUSA ≥${DEV_LOG_JUMP_M}m (retention ${DEV_LOG_RETAIN_H}h, ${hist.length} lanci salvati)\n`+
     (jumpsHist.length?jumpsHist.join('\n'):'Nessun salto registrato nello storico.')+
-    extSummary+apSummary+wySummary;
+    extSummary+apSummary+pienaShadowText(STATE.pienaShadow)+wySummary;
 }
 function recordClmSample(cls){
   // round3: il pannello NON registra più campioni propri (erano per-browser). Il buffer arriva dal Worker.
@@ -2068,7 +2069,7 @@ async function fj(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.s
 async function fetchText(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}
 
 async function fetchOM(){
-  const v=['cape','lifted_index','convective_inhibition','freezing_level_height','boundary_layer_height','temperature_2m','dew_point_2m','relative_humidity_2m','precipitation_probability','precipitation','cloud_cover','wind_speed_10m','wind_direction_10m','wind_gusts_10m','temperature_300hPa','temperature_250hPa','temperature_200hPa','temperature_150hPa','temperature_100hPa','temperature_70hPa','geopotential_height_300hPa','geopotential_height_250hPa','geopotential_height_200hPa','geopotential_height_150hPa','geopotential_height_100hPa','geopotential_height_70hPa','wind_speed_250hPa','wind_direction_250hPa','wind_speed_700hPa','wind_direction_700hPa','total_column_integrated_water_vapour','uv_index','shortwave_radiation'].join(',');
+  const v=['cape','pressure_msl','lifted_index','convective_inhibition','freezing_level_height','boundary_layer_height','temperature_2m','dew_point_2m','relative_humidity_2m','precipitation_probability','precipitation','cloud_cover','wind_speed_10m','wind_direction_10m','wind_gusts_10m','temperature_300hPa','temperature_250hPa','temperature_200hPa','temperature_150hPa','temperature_100hPa','temperature_70hPa','geopotential_height_300hPa','geopotential_height_250hPa','geopotential_height_200hPa','geopotential_height_150hPa','geopotential_height_100hPa','geopotential_height_70hPa','wind_speed_250hPa','wind_direction_250hPa','wind_speed_700hPa','wind_direction_700hPa','total_column_integrated_water_vapour','uv_index','shortwave_radiation'].join(',');
   // FIX round 22 — stesso bug del PATCH v8.11 (allora extractHours tagliava
   // a 15h invece di 49h piene; oggi tagliava a 49h invece di 97h dopo che
   // il round 19 ha spostato il confine "predizione lontana" da 48h a 96h
@@ -4862,7 +4863,10 @@ function buildQuorumCategories(cvSeries,cpSeries,idxs){
     // else: CAPE nudo senza LI né CIN → hit resta false (era qui il buco)
     return {hasData, hit};
   });
-const qBacino=cpBasinSeries.length?quorumCategory(cpBasinSeries.map(c=>c.series), idxs, (s,ix)=>{
+// round34: la piena alla foce segue la pioggia sul bacino di 24–48 h (tempo di corsa). Il quorum bacino guarda quindi la pioggia nella finestra
+  // ESTESA di 48 h all'indietro (mai prima dell'inizio della serie): così una piena prevista dopo la pioggia non resta cieca. Soglia invariata (60 mm in 24 h).
+  const _bacIdx=(()=>{const lo=Math.max(0,Math.min(...idxs)-48),hi=Math.max(...idxs),a=[];for(let i=lo;i<=hi;i++)a.push(i);return a;})();
+  const qBacino=cpBasinSeries.length?quorumCategory(cpBasinSeries.map(c=>c.series), _bacIdx, (s,ix)=>{
     // FIX round 9 (segnalato da Guyle): la finestra idxs copre ora 0-49h
     // (allargata per allinearsi a calcExt48H), ma QTHRESH.basin24h=60mm e
     // l'etichetta "cumulata 24h" restano tarate su un arco di 24h — sommare
@@ -4947,9 +4951,77 @@ async function computeQuorum48h(setSrc,pre){ // round81: pre={dpc,ma} = promesse
   }
   out.cvSeries=cvSeries;   // round 14 — necessario per mostrare il dettaglio per-modello nel briefing
   out.idxs=idxs;
+  out.cpBasinSeries=cpSeries.filter(c=>QCHECKPOINTS_BASIN.some(b=>b.name===c.name)); // round35: serie bacino per l'indice ombra "piena composita"
   out.cpGenesisSeries=cpGenesisSeries; // ROUND 25 — necessaria per il controllo Grande C ravvicinato (sezione ⑤), riusa dati già scaricati
   out.ok=true;
   return out;
+}
+
+
+// ═══ round35 — OMBRA "PIENA COMPOSITA CON MARE ALLA FOCE" (solo log + memoria remota, NESSUN effetto su allerte/soglie) ═══
+// Schema a 4 strati (forzante atmosferica · stato del bacino · mare alla foce · idrometria). Fase A: gli strati 1 e 3 con i dati già disponibili;
+// strati 2 (suolo, neve, antecedenti) e 4 (sincronia Calore–Volturno, argini) = "n/d (fase B)". Soglie PROVVISORIE da letteratura/Annali (1949, 1968), da tarare sugli eventi.
+function computePienaShadow(om,marine,flood,q){
+  const out={ok:false,ver:'ombra-A1',launch:new Date().toISOString()};
+  try{
+    const H=om?.hourly,T=q?.cvSeries?.time;
+    if(!H?.time||!T)return {...out,reason:'dati mancanti'};
+    const now=Date.now(),s0=nowIdxQ(T),lo=Math.max(0,s0-12),hi=Math.min(T.length-1,s0+72);
+    // 1) pioggia areale sul bacino, massimo mobile 48 h (media dei checkpoint, per modello)
+    const bas=q.cpBasinSeries||[],perModel=[];
+    (typeof QMODELS!=='undefined'?QMODELS:[]).forEach(m=>{
+      const sums=[];
+      bas.forEach(c=>{const p=c.series?.models?.[m]?.prec;if(!p)return;let best=null;
+        for(let a=lo;a+48<=hi+1;a++){let t=0,ok=0;for(let k=a;k<a+48;k++){const v=p[k];if(v!=null){t+=v;ok++;}}if(ok>=40&&(best==null||t>best))best=t;}
+        if(best!=null)sums.push(best);});
+      if(sums.length)perModel.push({m,mm:sums.reduce((x,y)=>x+y,0)/sums.length});});
+    const vals=perModel.map(x=>x.mm).sort((a,b)=>a-b),med=vals.length?vals[Math.floor((vals.length-1)/2)]:null;
+    const forz={n:vals.length,med:med!=null?Math.round(med):null,max:vals.length?Math.round(vals[vals.length-1]):null,over60:vals.filter(v=>v>=60).length,over100:vals.filter(v=>v>=100).length};
+    // 2) atmosfera: acqua precipitabile, pressione, zero termico (best_match, punto CV, prossime 72 h)
+    const idx=[];H.time.forEach((t,i)=>{const ms=new Date(t).getTime();if(ms>=now-3600000&&ms<=now+72*3600000)idx.push(i);});
+    const mx=a=>{const v=idx.map(i=>a?.[i]).filter(x=>x!=null);return v.length?Math.max(...v):null;},mn=a=>{const v=idx.map(i=>a?.[i]).filter(x=>x!=null);return v.length?Math.min(...v):null;};
+    const pw48=Math.max(0,...idx.filter(i=>new Date(H.time[i]).getTime()<=now+48*3600000).map(i=>H.total_column_integrated_water_vapour?.[i]??0));
+    const pr=H.pressure_msl;let drop6=null;if(pr){idx.forEach(i=>{const a=pr[i],b=pr[i+6];if(a!=null&&b!=null){const d=a-b;if(drop6==null||d>drop6)drop6=d;}});}
+    const pmin=mn(pr),atm={pwatMax:Math.round(pw48*10)/10,pminHpa:pmin!=null?Math.round(pmin*10)/10:null,drop6h:drop6!=null?Math.round(drop6*10)/10:null,frzMaxM:mx(H.freezing_level_height)!=null?Math.round(mx(H.freezing_level_height)):null};
+    // 3) mare alla foce: onda onshore (settore 238°±65°), periodo, sovralzo barometrico stimato (≈1 cm/hPa sotto 1013)
+    const MH=marine?.hourly,sea={hs:null,tp:null,dir:null,at:null,surgeCm:pmin!=null?Math.max(0,Math.round(1013-pmin)):null};
+    const hsByDay={};
+    if(MH?.time)MH.time.forEach((t,i)=>{const ms=new Date(t).getTime();if(ms<now-3600000||ms>now+72*3600000)return;const hs=MH.wave_height?.[i],d=MH.wave_direction?.[i];
+      if(hs==null||d==null||!isOnshoreDir(d))return;const day=String(t).slice(0,10);if(hsByDay[day]==null||hs>hsByDay[day])hsByDay[day]=hs;
+      if(sea.hs==null||hs>sea.hs){sea.hs=Math.round(hs*100)/100;sea.tp=MH.wave_period?.[i]??null;sea.dir=Math.round(d);sea.at=String(t);}});
+    // 4) GloFAS: giorno di picco e mare onshore nello stesso giorno e nel precedente (la piena è giornaliera, senza orario)
+    let gl=null;const gd=flood?.daily;
+    if(gd?.time){const qa=gd.river_discharge_median??gd.river_discharge;let bi=-1;gd.time.forEach((d,i)=>{if(qa[i]!=null&&new Date(d+'T23:59:59').getTime()>=now&&(bi<0||qa[i]>qa[bi]))bi=i;});
+      if(bi>=0){const d=gd.time[bi],dp=new Date(new Date(d+'T12:00:00').getTime()-86400000).toISOString().slice(0,10);
+        gl={day:d,q:Math.round(qa[bi]),qMin:gd.river_discharge_min?.[bi]!=null?Math.round(gd.river_discharge_min[bi]):null,qMax:gd.river_discharge_max?.[bi]!=null?Math.round(gd.river_discharge_max[bi]):null,hsSameDay:hsByDay[d]!=null?Math.round(hsByDay[d]*100)/100:null,hsDayBefore:hsByDay[dp]!=null?Math.round(hsByDay[dp]*100)/100:null};}}
+    // livelli provvisori
+    const lvForz=forz.med==null?'n/d':forz.med>=100?'critica':forz.med>=60?'attenzione':'nessuna';
+    const lvSea=sea.hs==null?'nessuna':(sea.hs>=4?'severa':(sea.hs>=2.5&&(sea.tp||0)>=8)?'critica':sea.hs>=1.5?'attenzione':'nessuna');
+    const sc=(lvForz==='critica'?2:lvForz==='attenzione'?1:0)+((lvSea==='critica'||lvSea==='severa')?2:lvSea==='attenzione'?1:0);
+    const label=sc>=4?'ALTO (forzante e mare critici; sincronia non valutata)':sc>=3?'ELEVATO':sc>=2?'ATTENZIONE':'BASSO';
+    return {...out,ok:true,forz,atm,sea,gl,lv:{forz:lvForz,sea:lvSea,sync:'n/d (fase B)',suolo:'n/d (fase B)'},label};
+  }catch(e){return {...out,reason:String(e.message||e)};}
+}
+let PIENA_SHADOW_SIG=null;
+function reportShadowToWorker(rec){
+  if(!rec?.ok)return;
+  const slim={...rec};delete slim.launch;const sig=JSON.stringify(slim);if(sig===PIENA_SHADOW_SIG)return;PIENA_SHADOW_SIG=sig;
+  fetch(`${CUSTOM_CORS_PROXY}/api/shadow/report`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'piena',rec}),keepalive:true,signal:AbortSignal.timeout(15000)})
+    .then(r=>r.json()).then(j=>{STATE.devLogShadowArchive=j&&j.ok?`memoria remota: ${j.saved}`:'rifiutato dal Worker';}).catch(e=>{STATE.devLogShadowArchive='✗ '+String(e.message||e);});
+}
+function pienaShadowText(r){
+  if(!r)return '';
+  const L=['','─'.repeat(44),'OMBRA — PIENA COMPOSITA CON MARE ALLA FOCE (solo log, non entra in alcun calcolo né allerta; soglie provvisorie, schema a 4 strati)'];
+  if(!r.ok){L.push('  non calcolata: '+(r.reason||'n/d'));return L.join('\n');}
+  const f=r.forz,a=r.atm,s=r.sea,g=r.gl;
+  L.push(`  1 FORZANTE — pioggia sul bacino (media Venafro+Caiazzo, max su 48 h): mediana ${f.med} mm · massimo modello ${f.max} mm · ${f.over60}/${f.n} modelli ≥60 mm · ${f.over100}/${f.n} ≥100 mm → ${r.lv.forz.toUpperCase()} (attenzione ≥60, critica ≥100)`);
+  L.push(`    atmosfera: acqua precipitabile max ${a.pwatMax} mm (attenzione >30–35) · pressione minima ${a.pminHpa} hPa, calo max in 6 h ${a.drop6h} hPa (critico <1002 e ≥4–6) · zero termico max ${a.frzMaxM} m (neve: fase B)`);
+  L.push(`  2 STATO DEL BACINO — suolo, neve, piogge antecedenti: ${r.lv.suolo}; invasi e argini: nessuna fonte aperta`);
+  L.push(`  3 MARE ALLA FOCE — onda onshore (238°±65°) massima: ${s.hs!=null?`Hs ${s.hs} m, T ${s.tp??'n/d'} s, da ${s.dir}° (${s.at})`:'nessuna onda onshore'} · sovralzo barometrico stimato ${s.surgeCm??'n/d'} cm (critico ≥35–50) → ${r.lv.sea.toUpperCase()} (attenzione Hs ≥1,5 · critica Hs ≥2,5 con T ≥8 s · severa ≥4 m)`);
+  L.push(`  4 IDROMETRIA — sincronia Calore–Volturno: ${r.lv.sync}${g?` · GloFAS picco ${g.day}: mediana ${g.q} m³/s (insieme ${g.qMin}–${g.qMax}) · onda onshore max quel giorno ${g.hsSameDay??'—'} m, il giorno prima ${g.hsDayBefore??'—'} m`:' · GloFAS: nessun picco'}`);
+  L.push(`  SINTESI OMBRA: ${r.label}`);
+  L.push(`  Memoria remota (Worker): ${STATE.devLogShadowArchive||'invio in corso'}`);
+  return L.join('\n');
 }
 
 // ── GATE — applica la corroborazione a calcExt48H SENZA modificarne la formula ──
@@ -5022,6 +5094,7 @@ function floodDaysIn(wFrom,wTo){
   return out;
 }
 function floodLevelEval(level,wFrom,wTo,bacinoAlert){
+  (STATE.devFlood=STATE.devFlood||[]).push(`livello ${level} finestra +${wFrom}…+${wTo}h: quorum bacino ${bacinoAlert?'SÌ':'NO'} · tappo foce ${STATE.tappo?.critico?.resistenza||'n/d'}`);
   const thr=HZ_CALC.alluvione.th[level],days=floodDaysIn(wFrom,wTo).filter(d=>d.q>=thr);
   if(!days.length)return null;
   // corroborazione: l'estremo basso dell'insieme GloFAS deve restare almeno a metà soglia (il segnale non regge su un solo membro)
@@ -5029,11 +5102,12 @@ function floodLevelEval(level,wFrom,wTo,bacinoAlert){
   let extra=true;
   if(level==='rosso')extra=!!bacinoAlert||STATE.tappo?.critico?.resistenza==='alta'; // NERO: seconda conferma obbligatoria
   const use=ok.length&&extra?ok:days,peak=use.reduce((a,b)=>b.q>a.q?b:a);
-  return {alert:ok.length>0&&extra,hit:true,from:use[0].t0,to:use[use.length-1].t1-60000,peak:Math.round(peak.q),peakAt:peak.t0,qMin:peak.qMin,qMax:peak.qMax,daily:true,unit:'m³/s',extraMissing:ok.length>0&&!extra};
+  return {alert:ok.length>0&&extra,hit:true,from:use[0].t0,to:use[use.length-1].t1-60000,peak:Math.round(peak.q),peakAt:peak.t0,qMin:peak.qMin,qMax:peak.qMax,daily:true,unit:'m³/s',extraMissing:ok.length>0&&!extra,extraSrc:level==='rosso'&&extra?(bacinoAlert?'bacino':'tappo'):null};
 }
 // round16: valuta le 6 finestre (3 puntuali + 3 tardive) e restituisce, per fenomeno, il livello massimo raggiunto.
 function evalCalcWindows(hrs,sst,farSents,farSwell,nearSents,metarSents,q){
   const out={ok:false,alerts:[],perWindow:{},diary:{},unconf:[]};
+  STATE.devFlood=[];
   const dMax=(k,v)=>{ if(v!=null&&!(out.diary[k]>=v))out.diary[k]=Math.round(v); };
   if(!q||!q.ok||!q.byWindow||!hrs||hrs.length<2)return out;
   const calcHz=n=>n.startsWith('Precipitazione')?'pioggia':n.startsWith('Vento')?'vento':n.startsWith('Alluvione')?'alluvione':n.startsWith('Caldo')?'caldo':n.startsWith('Ondata di freddo')?'freddo':'altro';
@@ -5058,7 +5132,7 @@ function evalCalcWindows(hrs,sst,farSents,farSwell,nearSents,metarSents,q){
           const fe=floodLevelEval(w.level,w.late?0:w.from,w.to,qw.categories.bacino?.alert);
           if(!fe)continue;
           hit=true;alert=fe.alert;concord=alert?1:0;valid=1;models=['GloFAS'];floodPeak=fe.peak;p=Math.min(95,Math.round(fe.peak/GLOFAS_GRAVE_TH*50));
-          timing={from:fe.from,to:fe.to,firstAny:fe.from,lastAny:fe.to,peak:fe.peak,peakAt:fe.peakAt,unit:fe.unit,daily:true,qMin:fe.qMin,qMax:fe.qMax};
+          timing={from:fe.from,to:fe.to,firstAny:fe.from,lastAny:fe.to,peak:fe.peak,peakAt:fe.peakAt,unit:fe.unit,daily:true,qMin:fe.qMin,qMax:fe.qMax,extra:fe.extraSrc};
           label=`Piena del Volturno: ${HZ_TXT.alluvione.desc(th)} (GloFAS)`;
           if(fe.extraMissing)alert=false;
         }else{
@@ -5213,7 +5287,7 @@ function applyQuorumGate(ext, q, opts){
     if(evName.startsWith('Alluvione grave')){
       const p=c.bacino.valid>0?Math.round(c.bacino.frac*100):null;
       const note=c.bacino.valid>0
-        ?`Quorum: ${c.bacino.concord}/${c.bacino.valid} modelli bacino (${p}% pesato-risoluzione) ${c.bacino.alert?'confermano':'non confermano'} piena critica.`
+        ?`Quorum: ${c.bacino.concord}/${c.bacino.valid} modelli bacino (${p}% pesato-risoluzione; pioggia sul bacino nella finestra e nelle 48 h precedenti) ${c.bacino.alert?'confermano':'non confermano'} piena critica.`
         :'Nessun checkpoint bacino disponibile nel quorum per questa finestra.';
       return{...c.bacino,overrideP:p,overrideNote:note,confirmed:c.bacino.alert,institutionalConfirmed:false,institutionalWatch:false};
       // beta4 round5 (11/11/2026, principio dell'operatore): l'allerta ISTITUZIONALE è burocrazia dell'Ente: va riportata
@@ -6541,7 +6615,14 @@ function bfSectPredizione48h(hrs,sst){
      lines.push(`  ENTE sullo stesso fenomeno (${plan.calc.hazard}): ${_f(_same.length?_same:_its)}`);
      if(_oth.length&&_same.length)lines.push(`  ENTE su altri fenomeni, senza riscontro BTW (BTW non ha allerte su questi fenomeni: riportati com'è, non confermati né smentiti): ${_f(_oth)}`);}
   } else if(plan?.mode==='divergenza'){
-    lines.push(`⚠ DUE ALLERTE DISTINTE su fenomeni diversi — nessuna convergenza: BTW su "${plan.calc.hazard}", fonte istituzionale su "${plan.inst.hazard}".`);
+    {let _g=null;try{calcStatusBoxHTML(plan);_g=STATE.statusGroups;}catch(e){}
+     const _t=r=>String(r.t).replace(/<br>/g,' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+     if(_g&&(_g.conv.length||_g.btw.length||_g.none.length)){
+       lines.push('⚠ ALLERTE SU PIÙ FENOMENI — il riscontro tra Ente e BTW è valutato fenomeno per fenomeno, con lo stesso criterio dei riquadri del pannello (la convergenza richiede stesso fenomeno, stesso livello e orari sovrapposti):');
+       _g.conv.forEach(r=>lines.push(`  ✔ CONVERGENZA — Ente e BTW concordano: ${_t(r)}`));
+       _g.btw.forEach(r=>lines.push(`  BTW senza convergenza con l'Ente: ${_t(r)}`));
+       _g.none.forEach(r=>lines.push(`  Avvisi dell'Ente non confermati da BTW: ${_t(r)}`));
+     }else lines.push(`⚠ DUE ALLERTE DISTINTE su fenomeni diversi — nessuna convergenza: BTW su "${plan.calc.hazard}", fonte istituzionale su "${plan.inst.hazard}".`);}
     lines.push(`  BTW: ${plan.calc.label}${plan.calc.note?` — ${plan.calc.note}`:''}.${hzWhenTxt((plan.calcAll||[]).find(c=>c.hazard===plan.calc.hazard)||{})}`);
     lines.push(`  ENTE (${plan.inst.level||plan.inst.severity}): ${plan.inst.items.map(i=>`${i.src} [${(i.lvl||'').toUpperCase()}]: ${i.txt}`).join(' · ')}`);
   } else if(plan?.mode==='inst'){
@@ -6576,7 +6657,7 @@ function bfSectPredizione48h(hrs,sst){
     const tr=(ALERTS_TRACKED?.alerts||[]).filter(a=>a.k==='calc'&&(a.st==='aperta'||(a.st==='chiusa'&&Date.now()-Date.parse(a.vt)<72*3600000)));
     if(tr.length){
       lines.push('  SEGUITE (registro in rete, emesse da lanci precedenti):');
-      tr.slice(0,8).forEach(a=>lines.push(`    ${calcIcon(a.hz,a.li||a.lv)} ${calcLvName(a.hz,a.li||a.lv)} ${a.hz} — ${a.lb||''} · emessa ${fm(a.f)} · finestra ${a.vf?fm(a.vf):'?'} → ${fm(a.vt)} · ${a.st==='chiusa'?'ESITO: '+(a.vd||'n/d'):(Date.now()<Date.parse(a.vf||a.f)?'in attesa della finestra':Date.now()<Date.parse(a.vt)?'finestra in corso'+(a.vd?` (finora: ${a.vd})`:''):'finestra conclusa, verifica in corso'+(a.vd?` (provvisorio: ${a.vd})`:''))}`));
+      tr.slice(0,8).forEach(a=>lines.push(`    ${calcIcon(a.hz,a.lv||a.li)} ${calcLvName(a.hz,a.lv||a.li)} ${a.hz}${a.li&&a.lv&&a.li!==a.lv?` (emessa come ${calcLvName(a.hz,a.li)}, poi alzata)`:''} — ${a.lb||''} · emessa ${fm(a.f)} · finestra ${a.vf?fm(a.vf):'?'} → ${fm(a.vt)} · ${a.st==='chiusa'?'ESITO: '+(a.vd||'n/d'):(Date.now()<Date.parse(a.vf||a.f)?'in attesa della finestra':Date.now()<Date.parse(a.vt)?'finestra in corso'+(a.vd?` (finora: ${a.vd})`:''):'finestra conclusa, verifica in corso'+(a.vd?` (provvisorio: ${a.vd})`:''))}`));
     }
   }
   {
@@ -6945,7 +7026,7 @@ function peakAnyTxt(c){ // round26: massimo previsto quando l'orario non è dete
 }
 function hzWhenTxt(c){ // orario atteso del fenomeno secondo BTW — frase breve, senza HTML
   const t=c.timing; if(!t)return '';
-  if(t.daily){const d0=fmtAbsDay(t.from),d1=fmtAbsDay(t.to);return d0===d1?` Atteso per tutta la giornata di ${d0} (la portata GloFAS è giornaliera, senza orario).`:` Atteso da ${d0} a ${d1} (la portata GloFAS è giornaliera, senza orario).`;}
+  if(t.daily){const d0=fmtAbsDay(t.from),d1=fmtAbsDay(t.to);const xt=t.extra==='tappo'?' Il livello nero richiede una seconda conferma: la dà il mare in arrivo contro la foce (tappo), che ostacola lo scarico del fiume; i modelli del bacino a monte, da soli, non la darebbero.':t.extra==='bacino'?' Il livello nero richiede una seconda conferma: la dà il segnale dal bacino a monte.':'';return (d0===d1?` Atteso per tutta la giornata di ${d0} (la portata GloFAS è giornaliera, senza orario).`:` Atteso da ${d0} a ${d1} (la portata GloFAS è giornaliera, senza orario).`)+xt;}
   if(t.ongoing)return ` In corso ${t.sinceBefore?'da almeno ':'da '}${fmtWindAbs(t.from)} (stima dei modelli), previsto fino a ${fmtWindAbs(t.to)}.`;
   const w=t.from===t.to?`intorno a ${fmtWindAbs(t.from)}`:`da ${fmtWindAbs(t.from)} a ${fmtWindAbs(t.to)}`;
   return ` Atteso ${w}.`;
@@ -7037,6 +7118,7 @@ function calcStatusBoxHTML(plan){
       +`<div style="font-size:${isConv?13:11}px;font-weight:${isConv?700:600};letter-spacing:${isConv?'.5px':'1.2px'};color:${isBlack?'#e5e7eb':frame}">${title}</div>${grp.map(rowHTML).join('')}</div>`;
   };
   const gConv=rows.filter(r=>r.conv),gBtw=rows.filter(r=>!r.conv&&!r.none&&r.lvl),gNone=rows.filter(r=>!r.conv&&(r.none||!r.lvl));
+  STATE.statusGroups={conv:gConv,btw:gBtw,none:gNone}; // round32: lo stesso riscontro per fenomeno è usato dal briefing
   return boxHTML(gConv,'conv')+boxHTML(gBtw,'btw')+boxHTML(gNone,'none');
 }
 function renderAlertBanners(ext){
@@ -8063,7 +8145,8 @@ function renderHoursViz(hrs,hv){
     col=kind==='f'?HV_F:kind==='c'?HV_C:HV_M;
     const span=s===e?`${ora(s)}`:`${ora(s)}–${D[e].h}:59`.replace(':59','');
     const dur=e-s+1;
-    title=`${nm}<br>${s===e?(s===0?'in corso ora':'alle '+D[s].h):(s===0?'in corso, fino alle ':'')+(s===0?D[e].h+':59':D[s].h+'–'+D[e].h)}`;
+    const _eco=!!STATE.radarStatus?.hasEcho; // round32: "in corso" solo con eco radar sul punto; altrimenti è una previsione già valida da ora
+    title=`${nm}<br>${s===e?(s===0?(_eco?'in corso ora':'attesa già da ora'):'alle '+D[s].h):(s===0?(_eco?'in corso, fino alle ':'attesa da ora, fino alle '):'')+(s===0?D[e].h+':59':D[s].h+'–'+D[e].h)}`;
     // schiarita: prima ora dopo lo spell con nubi ≤50% e asciutta
     let clr=-1;for(let i=e+1;i<n;i++){if(!D[i].wet&&D[i].c<=50){clr=i;break;}}
     if(clr>=0)title+=`<br><span style="font-size:15px">poi schiarita dalle ${D[clr].h}</span>`;
@@ -8178,7 +8261,7 @@ function hzRowHTML(a){
   return `<div class="xrow" role="group" aria-label="${T.name}: ${nm}${p!=null?`, probabilità ${p}%`:''}">
       <div class="xhead"><span class="xic">${T.ic}</span><span class="xnm">${T.name}</span><span class="hvchip" style="background:#0b1828;color:${chipFg};font-size:10px;margin-left:auto">${nm}</span></div>
       ${p!=null?`<div class="xbar"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.max(p,1)}%;background:${col};border-radius:4px"></div></div>`:''}
-      <div class="xd">${pTxt}${line}<br><span style="color:#6b8aa3;font-size:10.5px">Scala BTW, propria (${hzScaleTxt(hz)}). Finestra del calcolo: da +12 a +72 ore dal lancio.</span></div></div>`;
+      <div class="xd">${pTxt}${line}<br><span style="color:#6b8aa3;font-size:10.5px">Scala BTW, propria (${hzScaleTxt(hz)}). Finestra di BTW: da +12 a +72 ore dal lancio.</span></div></div>`;
 }
 function btwRowsHTML(ext){
   const cw=ext?.calcWin; if(!cw||!cw.ok)return {html:'',active:false,n:0};
@@ -8742,7 +8825,9 @@ async function loadAll(){
     let mareggiata=null;
     try{ mareggiata=assessMareggiata(marine, hrs); }
     catch(e){ console.warn('Mareggiata fail',e); mareggiata={ok:false, reason:e.message}; }
-    STATE={hrs,sst,marHrs,risk,lastUpdate,flood,aq,nearSents,farSents,farSwell,swell:swellMax,metarData,radarStatus,dpcVMI,dpcSRT1,eumetsat,eumetsatCLM,eumetsatCLM_MTG,quorum48h,tappo,mareggiata,omHourly:om.hourly,devLogSources:_srcLog};
+    let pienaShadow=null;try{pienaShadow=computePienaShadow(om,marine,flood,quorum48h);}catch(e){pienaShadow={ok:false,reason:e.message};}
+    STATE={pienaShadow,hrs,sst,marHrs,risk,lastUpdate,flood,aq,nearSents,farSents,farSwell,swell:swellMax,metarData,radarStatus,dpcVMI,dpcSRT1,eumetsat,eumetsatCLM,eumetsatCLM_MTG,quorum48h,tappo,mareggiata,omHourly:om.hourly,devLogSources:_srcLog};
+    try{reportShadowToWorker(pienaShadow);}catch(_){}
     lb.style.display='none';tabs.style.display='flex';renderAll();
   }catch(e){lb.style.display='none';ph.style.display='block';setSrc('om',false,'OM: ✗');err.textContent='⚠ Errore: '+e.message;err.style.display='block';}
   btn.disabled=false;btn.textContent='↻ AGGIORNA';
